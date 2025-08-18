@@ -14,7 +14,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import com.chilluminati.rackedup.reminders.ReminderScheduler
 
 /**
  * Main Hilt module for app-wide dependencies

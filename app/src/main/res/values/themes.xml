@@ -14,5 +14,14 @@
         <!-- Customize your theme here. -->
     </style>
 
+    <!-- Splash screen theme for Android 12+ -->
+    <style name="Theme.RackedUp.Splash" parent="Theme.SplashScreen">
+        <!-- Background color -->
+        <item name="windowSplashScreenBackground">@color/black</item>
+        <!-- App icon - use the launcher icon which is properly sized -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <!-- Post-splash screen theme -->
+        <item name="postSplashScreenTheme">@style/Theme.RackedUp</item>
+    </style>
 
 </resources>

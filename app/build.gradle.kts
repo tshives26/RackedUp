@@ -169,6 +169,7 @@ dependencies {
 
             // Startup performance
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.core.splashscreen)
 
     // Charts
     implementation(libs.bundles.charts)

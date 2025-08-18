@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
@@ -27,70 +28,20 @@ import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
 import com.chilluminati.rackedup.presentation.theme.RackedUpTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install splash screen before calling super.onCreate()
+        installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
         setContent {
-            // Simple custom splash screen
-            val profileViewModel: ProfileViewModel = hiltViewModel()
-            val onboardingState by profileViewModel.onboardingState.collectAsStateWithLifecycle()
-            
-            var showSplash by remember { mutableStateOf(true) }
-            
-            LaunchedEffect(Unit) {
-                // Show splash for at least 1.5 seconds
-                kotlinx.coroutines.delay(1500L)
-                
-                // Then check if onboarding is complete
-                if (!onboardingState.isLoading) {
-                    showSplash = false
-                }
-            }
-            
-            // Also check when onboarding state changes
-            LaunchedEffect(onboardingState.isLoading) {
-                if (!onboardingState.isLoading) {
-                    kotlinx.coroutines.delay(200L)
-                    showSplash = false
-                }
-            }
-            
-            if (showSplash) {
-                // Simple splash screen with just the logo on black background
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFF1A1A1A)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "Logo",
-                        modifier = Modifier.size(200.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-            } else {
-                RackedUpAppWithTheme()
-            }
+            RackedUpAppWithTheme()
         }
     }
 }

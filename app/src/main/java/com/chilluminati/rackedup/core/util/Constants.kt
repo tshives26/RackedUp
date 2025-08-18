@@ -18,8 +18,7 @@ object Constants {
     // Charts
     const val CHART_ANIMATION_DURATION = 1000
     
-    // Navigation
-    const val SPLASH_DELAY_MS = 2000L
+
     
     // File Export
     const val EXPORT_DATE_FORMAT = "yyyy-MM-dd_HH-mm-ss"
@@ -31,7 +30,6 @@ object Constants {
     
     // Notifications
     const val WORKOUT_NOTIFICATION_CHANNEL_ID = "workout_channel"
-    const val REMINDER_NOTIFICATION_CHANNEL_ID = "reminder_channel"
     const val ALARM_NOTIFICATION_CHANNEL_ID = "alarm_channel"
     
     // Progress Photos
@@ -51,8 +49,6 @@ object Constants {
         const val AUTO_BACKUP_ENABLED = "auto_backup_enabled"
         const val BACKUP_FOLDER_URI = "backup_folder_uri"
         const val AUTO_BACKUP_INTERVAL = "auto_backup_interval"
-        const val WORKOUT_REMINDERS_ENABLED = "workout_reminders_enabled"
-        const val REMINDER_TIME_MINUTES = "reminder_time_minutes" // minutes from midnight
         const val REST_TIMER_SOUND_ENABLED = "rest_timer_sound_enabled"
         const val VIBRATION_ENABLED = "vibration_enabled"
         const val WEIGHT_UNIT = "weight_unit"

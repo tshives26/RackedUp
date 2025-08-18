@@ -106,20 +106,7 @@ class SettingsRepository @Inject constructor(
             ColorTheme.values().find { it.value == themeValue } ?: ColorTheme.SUNSET
         }
     
-    /**
-     * Get workout reminders preference as Flow
-     */
-    val workoutReminders: Flow<Boolean> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { preferences ->
-            preferences[workoutRemindersKey] ?: true
-        }
+
     
     /**
      * Get rest timer sound preference as Flow
@@ -200,21 +187,7 @@ class SettingsRepository @Inject constructor(
             }
         }
 
-    /**
-     * Get reminder time in minutes from midnight as Flow
-     */
-    val reminderTimeMinutes: Flow<Int> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { preferences ->
-            // Default to 18:00 (6 PM)
-            preferences[reminderTimeMinutesKey] ?: (18 * 60)
-        }
+
 
     /**
      * Get default rest time (seconds) as Flow
@@ -289,14 +262,7 @@ class SettingsRepository @Inject constructor(
         }
     }
     
-    /**
-     * Set workout reminders preference
-     */
-    suspend fun setWorkoutReminders(enabled: Boolean) = withContext(ioDispatcher) {
-        dataStore.edit { preferences ->
-            preferences[workoutRemindersKey] = enabled
-        }
-    }
+
     
     /**
      * Set rest timer sound preference
@@ -349,14 +315,7 @@ class SettingsRepository @Inject constructor(
         }
     }
 
-    /**
-     * Set reminder time in minutes from midnight
-     */
-    suspend fun setReminderTimeMinutes(minutesFromMidnight: Int) = withContext(ioDispatcher) {
-        dataStore.edit { preferences ->
-            preferences[reminderTimeMinutesKey] = minutesFromMidnight
-        }
-    }
+
 
     /**
      * Set default rest seconds
@@ -389,8 +348,7 @@ class SettingsRepository @Inject constructor(
         private val themeModeKey = stringPreferencesKey(PreferenceKeys.THEME_MODE)
         private val dynamicColorKey = booleanPreferencesKey(PreferenceKeys.DYNAMIC_COLOR)
         private val colorThemeKey = stringPreferencesKey(PreferenceKeys.COLOR_THEME)
-        private val workoutRemindersKey = booleanPreferencesKey(PreferenceKeys.WORKOUT_REMINDERS_ENABLED)
-        private val reminderTimeMinutesKey = intPreferencesKey(PreferenceKeys.REMINDER_TIME_MINUTES)
+
         private val restTimerSoundKey = booleanPreferencesKey(PreferenceKeys.REST_TIMER_SOUND_ENABLED)
         private val vibrationKey = booleanPreferencesKey(PreferenceKeys.VIBRATION_ENABLED)
         private val autoBackupKey = booleanPreferencesKey(PreferenceKeys.AUTO_BACKUP_ENABLED)

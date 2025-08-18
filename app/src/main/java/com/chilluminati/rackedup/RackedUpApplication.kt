@@ -97,21 +97,7 @@ class RackedUpApplication : Application(), Configuration.Provider {
                 enableVibration(true)
             }
 
-            val reminderChannel = NotificationChannel(
-                Constants.REMINDER_NOTIFICATION_CHANNEL_ID,
-                "Reminders",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Workout reminders and general app notifications"
-                enableVibration(true)
-                // Use custom sound in raw resources
-                val soundUri: Uri = Uri.parse("android.resource://" + packageName + "/" + R.raw.rest_timer_complete)
-                val attrs = AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build()
-                setSound(soundUri, attrs)
-            }
+
 
             val alarmChannel = NotificationChannel(
                 Constants.ALARM_NOTIFICATION_CHANNEL_ID,
@@ -132,7 +118,6 @@ class RackedUpApplication : Application(), Configuration.Provider {
 
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(workoutChannel)
-            manager.createNotificationChannel(reminderChannel)
             manager.createNotificationChannel(alarmChannel)
         }
     }
@@ -171,4 +156,6 @@ class RackedUpApplication : Application(), Configuration.Provider {
             }
         }
     }
+
+
 }
