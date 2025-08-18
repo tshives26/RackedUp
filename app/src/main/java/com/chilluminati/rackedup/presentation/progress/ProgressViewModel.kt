@@ -36,6 +36,38 @@ class ProgressViewModel @Inject constructor(
     private val _strengthData = MutableStateFlow<List<Pair<Date, Map<String, Double>>>>(emptyList())
     val strengthData: StateFlow<List<Pair<Date, Map<String, Double>>>> = _strengthData.asStateFlow()
 
+    // Universal strength metrics
+    private val _universalStrengthData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val universalStrengthData: StateFlow<List<Pair<Date, Double>>> = _universalStrengthData.asStateFlow()
+
+    // Volume load data
+    private val _volumeLoadData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val volumeLoadData: StateFlow<List<Pair<Date, Double>>> = _volumeLoadData.asStateFlow()
+
+    // Workout density data
+    private val _workoutDensityData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val workoutDensityData: StateFlow<List<Pair<Date, Double>>> = _workoutDensityData.asStateFlow()
+
+    // Workout efficiency data
+    private val _workoutEfficiencyData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val workoutEfficiencyData: StateFlow<List<Pair<Date, Double>>> = _workoutEfficiencyData.asStateFlow()
+
+    // Progression data
+    private val _progressionData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val progressionData: StateFlow<List<Pair<Date, Double>>> = _progressionData.asStateFlow()
+
+    // Weekly progress data
+    private val _weeklyProgressData = MutableStateFlow<List<Pair<Date, Double>>>(emptyList())
+    val weeklyProgressData: StateFlow<List<Pair<Date, Double>>> = _weeklyProgressData.asStateFlow()
+
+    // Exercise variety data
+    private val _exerciseVarietyData = MutableStateFlow<List<Pair<Date, Int>>>(emptyList())
+    val exerciseVarietyData: StateFlow<List<Pair<Date, Int>>> = _exerciseVarietyData.asStateFlow()
+
+    // Muscle group variety data
+    private val _muscleGroupVarietyData = MutableStateFlow<List<Pair<Date, Int>>>(emptyList())
+    val muscleGroupVarietyData: StateFlow<List<Pair<Date, Int>>> = _muscleGroupVarietyData.asStateFlow()
+
     // Body measurements data
     private val _measurementData = MutableStateFlow<List<Pair<Date, Map<String, Double>>>>(emptyList())
     val measurementData: StateFlow<List<Pair<Date, Map<String, Double>>>> = _measurementData.asStateFlow()
@@ -43,6 +75,10 @@ class ProgressViewModel @Inject constructor(
     // Personal records
     private val _personalRecords = MutableStateFlow<List<PersonalRecord>>(emptyList())
     val personalRecords: StateFlow<List<PersonalRecord>> = _personalRecords.asStateFlow()
+
+    // Volume-based personal records
+    private val _volumeBasedPersonalRecords = MutableStateFlow<List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>>(emptyList())
+    val volumeBasedPersonalRecords: StateFlow<List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>> = _volumeBasedPersonalRecords.asStateFlow()
 
     // Loading states
     private val _isLoading = MutableStateFlow(false)
@@ -105,6 +141,46 @@ class ProgressViewModel @Inject constructor(
 
                 // Load personal records
                 _personalRecords.value = records.sortedByDescending { it.achievedAt }
+
+                // Load volume-based personal records
+                val volumeRecords = progressRepository.getVolumeBasedPersonalRecords()
+                _volumeBasedPersonalRecords.value = volumeRecords
+
+                // Load universal strength metrics
+                val universalStrengthPoints = progressRepository.getUniversalStrengthMetrics(30).first()
+                _universalStrengthData.value = universalStrengthPoints.map { point ->
+                    point.date to point.relativeStrength
+                }
+                _volumeLoadData.value = universalStrengthPoints.map { point ->
+                    point.date to point.volumeLoad
+                }
+
+                // Load workout density metrics
+                val densityPoints = progressRepository.getWorkoutDensityMetrics(30).first()
+                _workoutDensityData.value = densityPoints.map { point ->
+                    point.date to point.volumePerMinute
+                }
+                _workoutEfficiencyData.value = densityPoints.map { point ->
+                    point.date to point.setsPerMinute
+                }
+
+                // Load progression metrics
+                val progressionPoints = progressRepository.getProgressionMetrics(30).first()
+                _progressionData.value = progressionPoints.map { point ->
+                    point.date to point.improvementPercentage
+                }
+                _weeklyProgressData.value = progressionPoints.map { point ->
+                    point.date to point.weeklyProgressRate
+                }
+
+                // Load exercise variety metrics
+                val varietyPoints = progressRepository.getExerciseVarietyMetrics(30).first()
+                _exerciseVarietyData.value = varietyPoints.map { point ->
+                    point.date to point.uniqueExercises
+                }
+                _muscleGroupVarietyData.value = varietyPoints.map { point ->
+                    point.date to point.muscleGroups
+                }
 
             } catch (e: Exception) {
                 // Handle any errors during data loading

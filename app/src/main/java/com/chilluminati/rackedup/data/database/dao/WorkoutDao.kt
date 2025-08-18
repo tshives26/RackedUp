@@ -30,4 +30,10 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workouts WHERE name = :name AND date = :date")
     suspend fun getWorkoutsByNameAndDate(name: String, date: Date): List<Workout>
+    
+    @Query("UPDATE workouts SET total_volume = :totalVolume, total_sets = :totalSets WHERE id = :workoutId")
+    suspend fun updateWorkoutTotals(workoutId: Long, totalVolume: Double, totalSets: Int)
+    
+    @Query("UPDATE workouts SET total_volume = (SELECT COALESCE(SUM(es.weight * es.reps), 0) FROM exercise_sets es INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id WHERE we.workout_id = :workoutId AND es.weight IS NOT NULL AND es.reps IS NOT NULL), total_sets = (SELECT COUNT(*) FROM exercise_sets es INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id WHERE we.workout_id = :workoutId) WHERE id = :workoutId")
+    suspend fun recalculateWorkoutTotals(workoutId: Long)
 }

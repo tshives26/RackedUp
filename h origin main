@@ -1,0 +1,5 @@
+[33m7f631a1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix splash screen issues and implement simple custom splash
+[33m957b9b5[m Remove MASTER_PROJECT_GUIDE.md from tracking and add to .gitignore
+[33m0ec427d[m Optimize app: Remove unused files and directories for better performance
+[33mb82450e[m docs: add comprehensive README for GitHub repository
+[33mc3757eb[m docs: add comprehensive README for GitHub repository

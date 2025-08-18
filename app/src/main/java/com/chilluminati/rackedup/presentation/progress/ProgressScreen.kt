@@ -24,7 +24,12 @@ import com.chilluminati.rackedup.presentation.components.charts.VolumeChart
 import com.chilluminati.rackedup.presentation.components.charts.StrengthChart
 import com.chilluminati.rackedup.presentation.components.charts.BodyMeasurementChart
 import com.chilluminati.rackedup.presentation.components.charts.ConsistencyChart
+import com.chilluminati.rackedup.presentation.components.charts.UniversalStrengthChart
+import com.chilluminati.rackedup.presentation.components.charts.WorkoutDensityChart
+import com.chilluminati.rackedup.presentation.components.charts.ProgressionChart
+import com.chilluminati.rackedup.presentation.components.charts.ExerciseVarietyChart
 import com.chilluminati.rackedup.presentation.components.QuickStatCard
+import com.chilluminati.rackedup.presentation.components.VolumeBasedPersonalRecordsCard
 import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
 import java.util.Date
 import com.chilluminati.rackedup.core.util.formatCompact
@@ -42,7 +47,7 @@ fun ProgressScreen(
     initialTab: String? = null
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = remember { listOf("Overview", "Strength", "Body", "History") }
+    val tabs = remember { listOf("Overview", "Strength", "Body", "Records", "History") }
 
     // Handle initial tab selection
     LaunchedEffect(initialTab) {
@@ -50,7 +55,8 @@ fun ProgressScreen(
             "overview" -> 0
             "strength" -> 1
             "body" -> 2
-            "history" -> 3
+            "records" -> 3
+            "history" -> 4
             else -> 0
         }
     }
@@ -78,6 +84,17 @@ fun ProgressScreen(
     val longestStreak by viewModel.longestStreak.collectAsStateWithLifecycle()
     val achievements by viewModel.achievements.collectAsStateWithLifecycle()
     val consistencyData by viewModel.consistencyData.collectAsStateWithLifecycle()
+    
+    // Universal progress metrics
+    val universalStrengthData by viewModel.universalStrengthData.collectAsStateWithLifecycle()
+    val volumeLoadData by viewModel.volumeLoadData.collectAsStateWithLifecycle()
+    val workoutDensityData by viewModel.workoutDensityData.collectAsStateWithLifecycle()
+    val workoutEfficiencyData by viewModel.workoutEfficiencyData.collectAsStateWithLifecycle()
+    val progressionData by viewModel.progressionData.collectAsStateWithLifecycle()
+    val weeklyProgressData by viewModel.weeklyProgressData.collectAsStateWithLifecycle()
+    val exerciseVarietyData by viewModel.exerciseVarietyData.collectAsStateWithLifecycle()
+    val muscleGroupVarietyData by viewModel.muscleGroupVarietyData.collectAsStateWithLifecycle()
+    val volumeBasedPersonalRecords by viewModel.volumeBasedPersonalRecords.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
         // Header
@@ -88,7 +105,11 @@ fun ProgressScreen(
             isLoading = isLoading,
             weightUnit = weightUnit,
             weeklyStats = weeklyStats,
-            currentStreak = currentStreak
+            currentStreak = currentStreak,
+            universalStrengthData = universalStrengthData,
+            volumeLoadData = volumeLoadData,
+            workoutDensityData = workoutDensityData,
+            volumeBasedPersonalRecords = volumeBasedPersonalRecords
         )
 
         // Tab layout
@@ -112,20 +133,40 @@ fun ProgressScreen(
                 weightUnit = weightUnit,
                 weeklyStats = weeklyStats,
                 monthlyStats = monthlyStats,
-                consistencyData = consistencyData
+                consistencyData = consistencyData,
+                universalStrengthData = universalStrengthData,
+                volumeLoadData = volumeLoadData,
+                workoutDensityData = workoutDensityData,
+                workoutEfficiencyData = workoutEfficiencyData,
+                progressionData = progressionData,
+                weeklyProgressData = weeklyProgressData,
+                exerciseVarietyData = exerciseVarietyData,
+                muscleGroupVarietyData = muscleGroupVarietyData,
+                volumeBasedPersonalRecords = volumeBasedPersonalRecords
             )
             1 -> StrengthProgressTab(
                 strengthData = strengthData,
                 volumeData = volumeData,
                 isLoading = isLoading,
                 weightUnit = weightUnit,
-                onNavigateToActiveWorkout = onNavigateToActiveWorkout
+                onNavigateToActiveWorkout = onNavigateToActiveWorkout,
+                universalStrengthData = universalStrengthData,
+                volumeLoadData = volumeLoadData,
+                workoutDensityData = workoutDensityData,
+                workoutEfficiencyData = workoutEfficiencyData,
+                progressionData = progressionData,
+                weeklyProgressData = weeklyProgressData
             )
             2 -> BodyProgressTab(
                 measurementData = measurementData,
                 isLoading = isLoading
             )
-            3 -> HistoryTab(
+            3 -> PersonalRecordsTab(
+                volumeBasedPersonalRecords = volumeBasedPersonalRecords,
+                isLoading = isLoading,
+                weightUnit = weightUnit
+            )
+            4 -> HistoryTab(
                 items = workoutHistoryDisplay,
                 onNavigateToWorkoutDetail = onNavigateToWorkoutDetail
             )
@@ -141,9 +182,15 @@ private fun ProgressHeader(
     isLoading: Boolean,
     weightUnit: String,
     weeklyStats: WeeklyStats,
-    currentStreak: Int
+    currentStreak: Int,
+    universalStrengthData: List<Pair<Date, Double>>,
+    volumeLoadData: List<Pair<Date, Double>>,
+    workoutDensityData: List<Pair<Date, Double>>,
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>
 ) {
-    val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty()
+    val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty() || 
+                  universalStrengthData.isNotEmpty() || volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty() ||
+                  volumeBasedPersonalRecords.isNotEmpty()
     
     Card(
         modifier = Modifier
@@ -259,9 +306,20 @@ private fun OverviewTab(
     weightUnit: String,
     weeklyStats: WeeklyStats,
     monthlyStats: MonthlyStats,
-    consistencyData: List<com.chilluminati.rackedup.data.repository.ConsistencyDataPoint>
+    consistencyData: List<com.chilluminati.rackedup.data.repository.ConsistencyDataPoint>,
+    universalStrengthData: List<Pair<Date, Double>>,
+    volumeLoadData: List<Pair<Date, Double>>,
+    workoutDensityData: List<Pair<Date, Double>>,
+    workoutEfficiencyData: List<Pair<Date, Double>>,
+    progressionData: List<Pair<Date, Double>>,
+    weeklyProgressData: List<Pair<Date, Double>>,
+    exerciseVarietyData: List<Pair<Date, Int>>,
+    muscleGroupVarietyData: List<Pair<Date, Int>>,
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>
 ) {
-    val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty()
+    val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty() || 
+                  universalStrengthData.isNotEmpty() || volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty() ||
+                  volumeBasedPersonalRecords.isNotEmpty()
     
     LazyColumn(
         modifier = Modifier
@@ -273,7 +331,7 @@ private fun OverviewTab(
         // Quick Stats (mirror Dashboard)
         item {
             Text(
-                text = stringResource(R.string.quick_stats),
+                text = "Quick Stats",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -344,7 +402,41 @@ private fun OverviewTab(
             }
 
             item {
-                StrengthChart(strengthData, listOf("Bench Press", "Squat", "Deadlift", "Overhead Press"), Modifier, "Strength Progress", weightUnit)
+                UniversalStrengthChart(
+                    relativeStrengthData = universalStrengthData,
+                    volumeLoadData = volumeLoadData,
+                    modifier = Modifier,
+                    title = "Universal Strength Progress",
+                    weightUnit = weightUnit
+                )
+            }
+
+            item {
+                WorkoutDensityChart(
+                    densityData = workoutDensityData,
+                    efficiencyData = workoutEfficiencyData,
+                    modifier = Modifier,
+                    title = "Workout Efficiency",
+                    weightUnit = weightUnit
+                )
+            }
+
+            item {
+                ProgressionChart(
+                    improvementData = progressionData,
+                    progressionRateData = weeklyProgressData,
+                    modifier = Modifier,
+                    title = "Progression Tracking"
+                )
+            }
+
+            item {
+                ExerciseVarietyChart(
+                    varietyData = exerciseVarietyData,
+                    muscleGroupData = muscleGroupVarietyData,
+                    modifier = Modifier,
+                    title = "Workout Variety"
+                )
             }
 
             item {
@@ -354,33 +446,12 @@ private fun OverviewTab(
 
         // Personal Records
         item {
-            Text(
-                text = stringResource(R.string.personal_records),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+            VolumeBasedPersonalRecordsCard(
+                personalRecords = volumeBasedPersonalRecords,
+                modifier = Modifier,
+                title = "Volume Personal Records",
+                weightUnit = weightUnit
             )
-        }
-
-        if (personalRecords.isEmpty() && !isLoading) {
-            item {
-                FeaturePlaceholderCard(
-                    title = "No Personal Records Yet",
-                    description = "Set personal records by completing workouts and achieving new maximums.",
-                    icon = Icons.Default.Star
-                )
-            }
-        } else {
-            items(
-                items = personalRecords.take(4),
-                key = { it.id },
-                contentType = { _ -> "pr" }
-            ) { record ->
-                PersonalRecordCard(
-                    exerciseName = "Exercise ${record.exerciseId}",
-                    weight = "${record.estimated1RM?.toInt() ?: 0} $weightUnit",
-                    date = record.achievedAt.toString()
-                )
-            }
         }
     }
 }
@@ -391,9 +462,16 @@ private fun StrengthProgressTab(
     volumeData: List<Pair<Date, Double>>,
     isLoading: Boolean,
     weightUnit: String,
-    onNavigateToActiveWorkout: (Long) -> Unit
+    onNavigateToActiveWorkout: (Long) -> Unit,
+    universalStrengthData: List<Pair<Date, Double>>,
+    volumeLoadData: List<Pair<Date, Double>>,
+    workoutDensityData: List<Pair<Date, Double>>,
+    workoutEfficiencyData: List<Pair<Date, Double>>,
+    progressionData: List<Pair<Date, Double>>,
+    weeklyProgressData: List<Pair<Date, Double>>
 ) {
-    val hasData = strengthData.isNotEmpty() || volumeData.isNotEmpty()
+    val hasData = strengthData.isNotEmpty() || volumeData.isNotEmpty() || universalStrengthData.isNotEmpty() || 
+                  volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty()
     
     // Get active workout session
     val workoutsViewModel: WorkoutsViewModel = hiltViewModel()
@@ -450,11 +528,74 @@ private fun StrengthProgressTab(
             }
 
             item {
-                StrengthChart(strengthData, listOf("Bench Press", "Squat", "Deadlift", "Overhead Press"), Modifier, "1RM Progression", weightUnit)
+                UniversalStrengthChart(
+                    relativeStrengthData = universalStrengthData,
+                    volumeLoadData = volumeLoadData,
+                    modifier = Modifier,
+                    title = "Universal Strength Progress",
+                    weightUnit = weightUnit
+                )
             }
 
             item {
-                VolumeChart(volumeData, Modifier, "Volume Analysis", weightUnit)
+                WorkoutDensityChart(
+                    densityData = workoutDensityData,
+                    efficiencyData = workoutEfficiencyData,
+                    modifier = Modifier,
+                    title = "Workout Efficiency",
+                    weightUnit = weightUnit
+                )
+            }
+
+            item {
+                ProgressionChart(
+                    improvementData = progressionData,
+                    progressionRateData = weeklyProgressData,
+                    modifier = Modifier,
+                    title = "Progression Tracking"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PersonalRecordsTab(
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
+    isLoading: Boolean,
+    weightUnit: String
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text(
+                text = "Volume Personal Records",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (volumeBasedPersonalRecords.isEmpty() && !isLoading) {
+            item {
+                FeaturePlaceholderCard(
+                    title = "No Personal Records Yet",
+                    description = "Complete workouts with exercises to see your volume personal records here.",
+                    icon = Icons.Default.Star
+                )
+            }
+        } else {
+            item {
+                VolumeBasedPersonalRecordsCard(
+                    personalRecords = volumeBasedPersonalRecords,
+                    modifier = Modifier,
+                    title = "All Volume PRs",
+                    weightUnit = weightUnit
+                )
             }
         }
     }
@@ -487,7 +628,7 @@ private fun BodyProgressTab(
                 BodyMeasurementChart(
                     measurementData = measurementData,
                     measurements = listOf("Weight", "Body Fat %", "Muscle Mass"),
-                    title = stringResource(R.string.body_measurements)
+                    title = "Body Measurements"
                 )
             }
 
@@ -521,7 +662,7 @@ private fun HistoryTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.workout_history),
+                    text = "Workout History",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
