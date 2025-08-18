@@ -24,6 +24,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.chilluminati.rackedup.data.database.entity.ProgramDay
 import com.chilluminati.rackedup.data.database.entity.ProgramExercise
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
+import com.chilluminati.rackedup.presentation.components.BouncyButton
 
 /**
  * Programs screen showing workout routines and program builder
@@ -51,11 +54,14 @@ fun ProgramsScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // Header - only show when not on builder tab
-        if (selectedTab != 2) {
-            ProgramsHeader(onCreateProgram = { viewModel.startNewProgram() })
-        }
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header - only show when not on builder tab
+            if (selectedTab != 2) {
+                ProgramsHeader(onCreateProgram = { viewModel.startNewProgram() })
+            }
 
         // Tab layout (hidden while actively building a program)
         if (!(selectedTab == 2 && builderState.isCreating)) {
@@ -91,41 +97,35 @@ fun ProgramsScreen(
             2 -> ProgramBuilderTab(viewModel = viewModel)
         }
     }
+    }
 }
 
 @Composable
 private fun ProgramsHeader(onCreateProgram: () -> Unit) {
-    Card(
+    GlassmorphismCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        backgroundAlpha = 0.15f
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 text = stringResource(R.string.programs),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Create and follow structured workout programs",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            ElevatedButton(
+            BouncyButton(
                 onClick = onCreateProgram,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.elevatedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -133,7 +133,11 @@ private fun ProgramsHeader(onCreateProgram: () -> Unit) {
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Create New Program")
+                Text(
+                    "Create New Program",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

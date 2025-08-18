@@ -36,6 +36,8 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
 import com.chilluminati.rackedup.core.util.formatCompact
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 
 /**
  * Progress screen showing analytics, charts, and workout history
@@ -98,8 +100,11 @@ fun ProgressScreen(
     val muscleGroupVarietyData by viewModel.muscleGroupVarietyData.collectAsStateWithLifecycle()
     val volumeBasedPersonalRecords by viewModel.volumeBasedPersonalRecords.collectAsStateWithLifecycle()
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // Header
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
         ProgressHeader(
             volumeData = volumeData,
             strengthData = strengthData,
@@ -161,6 +166,7 @@ fun ProgressScreen(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -181,27 +187,20 @@ private fun ProgressHeader(
                   universalStrengthData.isNotEmpty() || volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty() ||
                   volumeBasedPersonalRecords.isNotEmpty()
     
-    Card(
+    GlassmorphismCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        backgroundAlpha = 0.15f
     ) {
-        val gradStart = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-        val gradEnd = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f)
-        val gradient = Brush.horizontalGradient(listOf(gradStart, gradEnd))
         Column(
-            modifier = Modifier
-                .drawBehind { drawRect(brush = gradient) }
-                .padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Text(
                 text = "This Week",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -214,13 +213,13 @@ private fun ProgressHeader(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Loading...",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -233,18 +232,18 @@ private fun ProgressHeader(
                 imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "No progress data yet",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                     Text(
                         text = "Complete your first workout to see your progress",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
             } else {

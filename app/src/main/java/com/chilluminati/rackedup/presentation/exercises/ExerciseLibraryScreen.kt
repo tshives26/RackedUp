@@ -25,6 +25,8 @@ import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.presentation.components.EmptyStateCard
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
 import com.chilluminati.rackedup.presentation.components.SecondaryButton
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 
 /**
  * Exercise library screen showing all available exercises
@@ -55,9 +57,12 @@ fun ExerciseLibraryScreen(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
             TopAppBar(
                 title = {
                     Text(if (isSelectionMode) "Select Exercise" else stringResource(R.string.exercise_library))
@@ -211,6 +216,7 @@ fun ExerciseLibraryScreen(
                     .weight(1f)
             )
         }
+    }
     }
 }
 

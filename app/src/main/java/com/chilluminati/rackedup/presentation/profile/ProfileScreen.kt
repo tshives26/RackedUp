@@ -24,6 +24,8 @@ import com.chilluminati.rackedup.R
 import com.chilluminati.rackedup.presentation.components.AccentSectionHeader
 import com.chilluminati.rackedup.presentation.components.PlateCalculator
 import com.chilluminati.rackedup.presentation.components.WeightConverter
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chilluminati.rackedup.data.database.entity.UserProfile
 import coil.compose.AsyncImage
@@ -43,12 +45,15 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
     ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Profile Header
         item {
             ProfileHeaderCard(
@@ -82,6 +87,7 @@ fun ProfileScreen(
             HelpSupportSection()
         }
     }
+    }
 }
 
 @Composable
@@ -103,18 +109,16 @@ private fun ProfileHeaderCard(
     profile: UserProfile?,
     onEditProfile: () -> Unit
 ) {
-    Card(
+    GlassmorphismCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        backgroundAlpha = 0.15f
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+                    Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             // Profile Avatar
             Card(
                 modifier = Modifier.size(64.dp),
@@ -151,7 +155,7 @@ private fun ProfileHeaderCard(
                     text = profile?.name ?: "Fitness Enthusiast",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = profile?.createdAt?.let { 
@@ -159,7 +163,7 @@ private fun ProfileHeaderCard(
                         "Member since ${formatter.format(it)}"
                     } ?: "Member since Dec 2024",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             

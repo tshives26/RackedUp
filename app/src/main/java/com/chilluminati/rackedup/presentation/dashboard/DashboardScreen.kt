@@ -32,6 +32,17 @@ import com.chilluminati.rackedup.R
 import com.chilluminati.rackedup.presentation.components.FeaturePlaceholderCard
 import com.chilluminati.rackedup.presentation.components.QuickStatCard
 import com.chilluminati.rackedup.presentation.components.RecentWorkoutCard
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
+import com.chilluminati.rackedup.presentation.components.PremiumButton
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.SlideInCard
+import com.chilluminati.rackedup.presentation.components.BouncyButton
+import com.chilluminati.rackedup.presentation.components.AnimatedLoadingCard
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
  
 import com.chilluminati.rackedup.presentation.profile.AchievementsViewModel
 import com.chilluminati.rackedup.presentation.profile.AchievementsDialog
@@ -59,30 +70,35 @@ fun DashboardScreen(
         }
     }
     
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 640.dp)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
         // Header
         item {
-            ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                val gradStart = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                val gradEnd = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f)
-                val gradient = androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(gradStart, gradEnd))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .drawBehind {
-                            drawRect(brush = gradient)
-                        }
-                        .padding(16.dp)
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { -it },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                ) + fadeIn()
+            ) {
+                GlassmorphismCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundAlpha = 0.15f
                 ) {
                     DashboardHeader(
                         profile = uiState.profile,
@@ -140,6 +156,7 @@ fun DashboardScreen(
         item {
             AchievementsSection()
         }
+            }
         }
     }
 }
@@ -150,16 +167,21 @@ private fun DashboardHeader(
     greeting: String = "Good morning!",
     motivationalMessage: String = "Ready to crush your goals?"
 ) {
-    Column {
+    Column(
+        modifier = Modifier.padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Text(
             text = if (profile != null) "$greeting, ${profile.name}!" else greeting,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
         )
         Text(
             text = motivationalMessage,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -277,21 +299,24 @@ private fun CurrentProgramSection(
 								maxItemsInEachRow = 2
 							) {
 								MetaItem(Icons.Default.CheckCircle, "$daysCompleted days complete")
-								MetaItem(Icons.Default.Event, lastCompletedLabel ?: "No days completed yet")
+								MetaItem(Icons.Default.Event, lastCompletedLabel.takeIf { !it.isNullOrBlank() } ?: "No days completed yet")
 							}
 						}
 						Spacer(modifier = Modifier.height(16.dp))
-						Button(
-							onClick = { onStartProgramDaySelection(activeProgram.id) },
-							modifier = Modifier
-								.fillMaxWidth(0.9f)
-								.align(Alignment.CenterHorizontally),
-							contentPadding = PaddingValues(vertical = 14.dp)
-						) {
-                        Icon(Icons.Default.PlayArrow, null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Start Workout")
-                    }
+                        BouncyButton(
+                            onClick = { onStartProgramDaySelection(activeProgram.id) },
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .align(Alignment.CenterHorizontally)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Start Workout",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            )
+                        }
                     TextButton(
                         onClick = onNavigateToPrograms,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -333,16 +358,13 @@ private fun QuickStatsSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 repeat(4) {
-                    Box(
+                    AnimatedLoadingCard(
+                        isLoading = true,
                         modifier = Modifier
                             .weight(1f)
                             .height(88.dp)
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .align(Alignment.Center)
-                        )
+                        // Empty content for loading state
                     }
                 }
             }
@@ -412,13 +434,13 @@ private fun RecentWorkoutsSection(
         
         if (isLoading) {
             repeat(3) {
-                Box(
+                AnimatedLoadingCard(
+                    isLoading = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp),
-                    contentAlignment = Alignment.Center
+                        .height(80.dp)
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    // Empty content for loading state
                 }
                 if (it < 2) Spacer(modifier = Modifier.height(8.dp))
             }

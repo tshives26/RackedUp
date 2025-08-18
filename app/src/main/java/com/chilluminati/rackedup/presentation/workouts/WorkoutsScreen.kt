@@ -19,6 +19,9 @@ import com.chilluminati.rackedup.data.database.entity.Workout
 import com.chilluminati.rackedup.presentation.components.EmptyStateCard
 import com.chilluminati.rackedup.presentation.components.RecentWorkoutCard
 import com.chilluminati.rackedup.presentation.components.SecondaryButton
+import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
+import com.chilluminati.rackedup.presentation.components.GradientBackground
+import com.chilluminati.rackedup.presentation.components.BouncyButton
 
 /**
  * Workouts screen showing workout history and quick start options
@@ -36,12 +39,15 @@ fun WorkoutsScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = remember { listOf("Recent", "Templates", "Favorites") }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // Header with FAB-style quick actions
-        WorkoutsHeader(
-            onStartQuickWorkout = { onNavigateToActiveWorkout(null) },
-            onNavigateToExerciseLibrary = onNavigateToExerciseLibrary
-        )
+    GradientBackground(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header with FAB-style quick actions
+            WorkoutsHeader(
+                onStartQuickWorkout = { onNavigateToActiveWorkout(null) },
+                onNavigateToExerciseLibrary = onNavigateToExerciseLibrary
+            )
 
         // Tab layout
         PrimaryTabRow(selectedTabIndex = selectedTab) {
@@ -66,6 +72,7 @@ fun WorkoutsScreen(
             2 -> FavoriteWorkoutsTab()
         }
     }
+    }
 }
 
 @Composable
@@ -73,45 +80,43 @@ private fun WorkoutsHeader(
     onStartQuickWorkout: () -> Unit,
     onNavigateToExerciseLibrary: () -> Unit
 ) {
-    Card(
+    GlassmorphismCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        backgroundAlpha = 0.15f
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 text = "Quick Start",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ElevatedButton(
+                BouncyButton(
                     onClick = onStartQuickWorkout,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Quick Start")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Quick Start",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                SecondaryButton(
+                BouncyButton(
                     onClick = onNavigateToExerciseLibrary,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -120,8 +125,12 @@ private fun WorkoutsHeader(
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Exercises")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Exercises",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
