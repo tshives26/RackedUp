@@ -31,6 +31,7 @@ import com.chilluminati.rackedup.presentation.components.charts.ExerciseVarietyC
 import com.chilluminati.rackedup.presentation.components.QuickStatCard
 import com.chilluminati.rackedup.presentation.components.VolumeBasedPersonalRecordsCard
 import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
+import com.chilluminati.rackedup.presentation.progress.BodyMeasurementScreen
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -547,41 +548,7 @@ private fun BodyProgressTab(
     measurementData: List<Pair<Date, Map<String, Double>>>,
     isLoading: Boolean
 ) {
-    val hasData = measurementData.isNotEmpty()
-    
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (!hasData && !isLoading) {
-            item {
-                FeaturePlaceholderCard(
-                    title = "No Body Measurements",
-                    description = "Add body measurements to track your physical progress over time.",
-                    icon = Icons.Default.Person
-                )
-            }
-        } else {
-            item {
-                BodyMeasurementChart(
-                    measurementData = measurementData,
-                    measurements = listOf("Weight", "Body Fat %", "Muscle Mass"),
-                    title = "Body Measurements"
-                )
-            }
-
-            item {
-                BodyMeasurementChart(
-                    measurementData = measurementData,
-                    measurements = listOf("Chest", "Waist", "Arms", "Legs"),
-                    title = "Body Measurements"
-                )
-            }
-        }
-    }
+    BodyMeasurementScreen()
 }
 
 @Composable

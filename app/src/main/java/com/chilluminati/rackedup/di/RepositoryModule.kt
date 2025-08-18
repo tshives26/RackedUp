@@ -9,6 +9,7 @@ import com.chilluminati.rackedup.data.database.dao.BodyMeasurementDao
 import com.chilluminati.rackedup.data.database.dao.UserProfileDao
 import com.chilluminati.rackedup.data.repository.AchievementsRepository
 import com.chilluminati.rackedup.data.repository.ProgramRepository
+import com.chilluminati.rackedup.data.repository.BodyMeasurementRepository
 // (remove duplicate ProgramDao import)
 import com.chilluminati.rackedup.data.database.dao.ProgramDayDao
 import com.chilluminati.rackedup.data.database.dao.ProgramExerciseDao
@@ -57,6 +58,16 @@ object RepositoryModule {
         programDao = programDao,
         programDayDao = programDayDao,
         programExerciseDao = programExerciseDao
+    )
+
+    @Provides
+    @Singleton
+    fun provideBodyMeasurementRepository(
+        bodyMeasurementDao: BodyMeasurementDao,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): BodyMeasurementRepository = BodyMeasurementRepository(
+        bodyMeasurementDao = bodyMeasurementDao,
+        ioDispatcher = ioDispatcher
     )
 }
 
