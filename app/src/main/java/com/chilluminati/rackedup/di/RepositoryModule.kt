@@ -5,11 +5,14 @@ import com.chilluminati.rackedup.data.database.dao.ProgramDao
 import com.chilluminati.rackedup.data.database.dao.WorkoutDao
 import com.chilluminati.rackedup.data.database.dao.WorkoutExerciseDao
 import com.chilluminati.rackedup.data.database.dao.ExerciseDao
+import com.chilluminati.rackedup.data.database.dao.ExerciseSetDao
 import com.chilluminati.rackedup.data.database.dao.BodyMeasurementDao
 import com.chilluminati.rackedup.data.database.dao.UserProfileDao
 import com.chilluminati.rackedup.data.repository.AchievementsRepository
 import com.chilluminati.rackedup.data.repository.ProgramRepository
 import com.chilluminati.rackedup.data.repository.BodyMeasurementRepository
+import com.chilluminati.rackedup.data.repository.ProgressRepository
+import com.chilluminati.rackedup.data.repository.WorkoutRepository
 // (remove duplicate ProgramDao import)
 import com.chilluminati.rackedup.data.database.dao.ProgramDayDao
 import com.chilluminati.rackedup.data.database.dao.ProgramExerciseDao
@@ -67,6 +70,40 @@ object RepositoryModule {
         @IoDispatcher ioDispatcher: CoroutineDispatcher
     ): BodyMeasurementRepository = BodyMeasurementRepository(
         bodyMeasurementDao = bodyMeasurementDao,
+        ioDispatcher = ioDispatcher
+    )
+
+    @Provides
+    @Singleton
+    fun provideProgressRepository(
+        workoutDao: WorkoutDao,
+        exerciseSetDao: ExerciseSetDao,
+        exerciseDao: ExerciseDao,
+        workoutExerciseDao: WorkoutExerciseDao,
+        personalRecordDao: PersonalRecordDao,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): ProgressRepository = ProgressRepository(
+        workoutDao = workoutDao,
+        exerciseSetDao = exerciseSetDao,
+        exerciseDao = exerciseDao,
+        workoutExerciseDao = workoutExerciseDao,
+        personalRecordDao = personalRecordDao,
+        ioDispatcher = ioDispatcher
+    )
+
+    @Provides
+    @Singleton
+    fun provideWorkoutRepository(
+        workoutDao: WorkoutDao,
+        workoutExerciseDao: WorkoutExerciseDao,
+        exerciseSetDao: ExerciseSetDao,
+        progressRepository: ProgressRepository,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): WorkoutRepository = WorkoutRepository(
+        workoutDao = workoutDao,
+        workoutExerciseDao = workoutExerciseDao,
+        exerciseSetDao = exerciseSetDao,
+        progressRepository = progressRepository,
         ioDispatcher = ioDispatcher
     )
 }

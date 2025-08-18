@@ -4,12 +4,15 @@ import com.chilluminati.rackedup.data.database.dao.WorkoutDao
 import com.chilluminati.rackedup.data.database.dao.ExerciseSetDao
 import com.chilluminati.rackedup.data.database.dao.ExerciseDao
 import com.chilluminati.rackedup.data.database.dao.WorkoutExerciseDao
+import com.chilluminati.rackedup.data.database.dao.PersonalRecordDao
 import com.chilluminati.rackedup.data.database.entity.PersonalRecord
 import com.chilluminati.rackedup.data.database.entity.BodyMeasurement
+import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Calendar
@@ -25,6 +28,7 @@ class ProgressRepository @Inject constructor(
     private val exerciseSetDao: ExerciseSetDao,
     private val exerciseDao: ExerciseDao,
     private val workoutExerciseDao: WorkoutExerciseDao,
+    private val personalRecordDao: PersonalRecordDao,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
     
@@ -90,8 +94,7 @@ class ProgressRepository @Inject constructor(
      */
     suspend fun getPersonalRecords(): List<PersonalRecord> {
         return withContext(ioDispatcher) {
-            // No mock data; return empty until PRs are recorded
-            emptyList()
+            personalRecordDao.getAllPersonalRecords()
         }
     }
     
@@ -101,7 +104,48 @@ class ProgressRepository @Inject constructor(
      */
     suspend fun getVolumeBasedPersonalRecords(): List<VolumeBasedPersonalRecord> {
         return withContext(ioDispatcher) {
-            // Get all exercise sets with their exercise information
+            // Get stored volume-based personal records
+            val personalRecords = personalRecordDao.getAllPersonalRecords()
+                .filter { it.recordType == "Volume" }
+            
+            val exercises = exerciseDao.getAllExercisesList()
+            val exerciseMap = exercises.associateBy { it.id }
+            
+            personalRecords.mapNotNull { pr ->
+                val exercise = exerciseMap[pr.exerciseId]
+                if (exercise != null && pr.volume != null && pr.weight != null && pr.reps != null) {
+                    VolumeBasedPersonalRecord(
+                        exerciseId = pr.exerciseId,
+                        exerciseName = exercise.name,
+                        exerciseCategory = exercise.category,
+                        equipment = exercise.equipment,
+                        weight = pr.weight,
+                        reps = pr.reps,
+                        volume = pr.volume,
+                        workoutId = pr.workoutId ?: 0,
+                        achievedAt = pr.achievedAt
+                    )
+                } else null
+            }.sortedByDescending { it.volume }
+        }
+    }
+    
+    /**
+     * Get volume-based personal records grouped by category
+     */
+    suspend fun getVolumeBasedPersonalRecordsByCategory(): Map<String, List<VolumeBasedPersonalRecord>> {
+        val records = getVolumeBasedPersonalRecords()
+        return records.groupBy { record -> record.exerciseCategory }
+    }
+    
+    /**
+     * Initialize volume-based personal records from existing workout data
+     * This should be called once to populate PRs from historical data
+     */
+    suspend fun initializeVolumePRsFromHistory() {
+        withContext(ioDispatcher) {
+            // Get all completed workouts and their exercise sets
+            val workouts = workoutDao.getAllWorkoutsList().filter { it.isCompleted }
             val exerciseSets = exerciseSetDao.getAllExerciseSets()
             val workoutExercises = workoutExerciseDao.getAllWorkoutExercises()
             val exercises = exerciseDao.getAllExercisesList()
@@ -111,23 +155,21 @@ class ProgressRepository @Inject constructor(
             val workoutExerciseMap = workoutExercises.associateBy { it.id }
             
             // Group sets by exercise and find the highest volume set for each
-            val exerciseVolumeMap = mutableMapOf<Long, VolumeBasedPersonalRecord>()
+            val exerciseVolumeMap = mutableMapOf<Long, PersonalRecord>()
             
-            exerciseSets.forEach { set ->
+            for (set in exerciseSets) {
                 val workoutExercise = workoutExerciseMap[set.workoutExerciseId]
                 if (workoutExercise != null && set.weight != null && set.reps != null && set.reps > 0) {
                     val exerciseId = workoutExercise.exerciseId
                     val volume = set.weight * set.reps
                     
                     val currentRecord = exerciseVolumeMap[exerciseId]
-                    if (currentRecord == null || volume > currentRecord.volume) {
+                    if (currentRecord == null || volume > (currentRecord.volume ?: 0.0)) {
                         val exercise = exerciseMap[exerciseId]
                         if (exercise != null) {
-                            exerciseVolumeMap[exerciseId] = VolumeBasedPersonalRecord(
+                            exerciseVolumeMap[exerciseId] = PersonalRecord(
                                 exerciseId = exerciseId,
-                                exerciseName = exercise.name,
-                                exerciseCategory = exercise.category,
-                                equipment = exercise.equipment,
+                                recordType = "Volume",
                                 weight = set.weight,
                                 reps = set.reps,
                                 volume = volume,
@@ -139,16 +181,67 @@ class ProgressRepository @Inject constructor(
                 }
             }
             
-            exerciseVolumeMap.values.sortedByDescending { it.volume }
+            // Insert all PRs
+            if (exerciseVolumeMap.isNotEmpty()) {
+                personalRecordDao.insertPersonalRecords(exerciseVolumeMap.values.toList())
+            }
         }
     }
     
     /**
-     * Get volume-based personal records grouped by category
+     * Check and update volume-based personal records for a completed workout
+     * This should be called when a workout is completed to check for new PRs
      */
-    suspend fun getVolumeBasedPersonalRecordsByCategory(): Map<String, List<VolumeBasedPersonalRecord>> {
-        val records = getVolumeBasedPersonalRecords()
-        return records.groupBy { record -> record.exerciseCategory }
+    suspend fun checkAndUpdateVolumePRs(workoutId: Long) {
+        withContext(ioDispatcher) {
+            // Get all exercise sets for this workout
+            val workoutExercises = workoutExerciseDao.getWorkoutExercises(workoutId).first()
+            val exerciseSets = mutableListOf<ExerciseSet>()
+            
+            workoutExercises.forEach { workoutExercise ->
+                val sets = exerciseSetDao.getSetsByWorkoutExerciseId(workoutExercise.id)
+                exerciseSets.addAll(sets)
+            }
+            
+            val exercises = exerciseDao.getAllExercisesList()
+            val exerciseMap = exercises.associateBy { it.id }
+            
+            // Check each set for potential new PRs
+            for (set in exerciseSets) {
+                if (set.weight != null && set.reps != null && set.reps > 0) {
+                    val workoutExercise = workoutExercises.find { it.id == set.workoutExerciseId }
+                    if (workoutExercise != null) {
+                        val exerciseId = workoutExercise.exerciseId
+                        val volume = set.weight * set.reps
+                        
+                        // Check if this is a new PR
+                        val existingPR = personalRecordDao.getPersonalRecords(exerciseId).first()
+                            .find { it.recordType == "Volume" }
+                        
+                        if (existingPR == null || volume > (existingPR.volume ?: 0.0)) {
+                            val exercise = exerciseMap[exerciseId]
+                            if (exercise != null) {
+                                val newPR = PersonalRecord(
+                                    exerciseId = exerciseId,
+                                    recordType = "Volume",
+                                    weight = set.weight,
+                                    reps = set.reps,
+                                    volume = volume,
+                                    workoutId = workoutId,
+                                    achievedAt = set.createdAt,
+                                    previousValue = existingPR?.volume,
+                                    improvement = if (existingPR != null && existingPR.volume != null) {
+                                        ((volume - existingPR.volume!!) / existingPR.volume!!) * 100
+                                    } else null
+                                )
+                                
+                                personalRecordDao.insertPersonalRecord(newPR)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     /**

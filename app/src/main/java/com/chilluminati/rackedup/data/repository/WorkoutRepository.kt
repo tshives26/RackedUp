@@ -24,6 +24,7 @@ class WorkoutRepository @Inject constructor(
     private val workoutDao: WorkoutDao,
     private val workoutExerciseDao: WorkoutExerciseDao,
     private val exerciseSetDao: ExerciseSetDao,
+    private val progressRepository: ProgressRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
     
@@ -171,6 +172,9 @@ class WorkoutRepository @Inject constructor(
                     isCompleted = true
                 )
                 workoutDao.updateWorkout(updatedWorkout)
+                
+                // Check for new personal records after workout completion
+                progressRepository.checkAndUpdateVolumePRs(workoutId)
             }
         }
     }

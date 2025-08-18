@@ -98,6 +98,8 @@ class ProgressViewModel @Inject constructor(
         fixExistingWorkoutTotals()
         observeConsistency()
         observeAchievements()
+        // Initialize PRs from historical data if needed
+        initializePRsFromHistory()
         observeAggregateStats()
     }
 
@@ -286,6 +288,20 @@ class ProgressViewModel @Inject constructor(
         loadProgressData()
     }
 
+    /**
+     * Initialize personal records from historical workout data
+     */
+    private fun initializePRsFromHistory() {
+        viewModelScope.launch {
+            try {
+                progressRepository.initializeVolumePRsFromHistory()
+            } catch (e: Exception) {
+                // Log error but don't crash the app
+                e.printStackTrace()
+            }
+        }
+    }
+    
     /**
      * Force refresh all stats
      */

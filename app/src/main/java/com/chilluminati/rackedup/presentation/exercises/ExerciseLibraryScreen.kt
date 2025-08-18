@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -147,7 +148,9 @@ fun ExerciseLibraryScreen(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { filtersExpanded = !filtersExpanded },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -156,12 +159,10 @@ fun ExerciseLibraryScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(onClick = { filtersExpanded = !filtersExpanded }) {
-                            Icon(
-                                imageVector = if (filtersExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters"
-                            )
-                        }
+                        Icon(
+                            imageVector = if (filtersExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters"
+                        )
                     }
 
                     if (filtersExpanded) {
