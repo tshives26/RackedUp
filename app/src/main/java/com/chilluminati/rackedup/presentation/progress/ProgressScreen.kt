@@ -32,6 +32,8 @@ import com.chilluminati.rackedup.presentation.components.QuickStatCard
 import com.chilluminati.rackedup.presentation.components.VolumeBasedPersonalRecordsCard
 import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
 import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Locale
 import com.chilluminati.rackedup.core.util.formatCompact
 
 /**
@@ -47,16 +49,15 @@ fun ProgressScreen(
     initialTab: String? = null
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = remember { listOf("Overview", "Strength", "Body", "Records", "History") }
+    val tabs = remember { listOf("Overview", "Body", "PRs", "History") }
 
     // Handle initial tab selection
     LaunchedEffect(initialTab) {
         selectedTab = when (initialTab?.lowercase()) {
             "overview" -> 0
-            "strength" -> 1
-            "body" -> 2
-            "records" -> 3
-            "history" -> 4
+            "body" -> 1
+            "records" -> 2
+            "history" -> 3
             else -> 0
         }
     }
@@ -144,29 +145,16 @@ fun ProgressScreen(
                 muscleGroupVarietyData = muscleGroupVarietyData,
                 volumeBasedPersonalRecords = volumeBasedPersonalRecords
             )
-            1 -> StrengthProgressTab(
-                strengthData = strengthData,
-                volumeData = volumeData,
-                isLoading = isLoading,
-                weightUnit = weightUnit,
-                onNavigateToActiveWorkout = onNavigateToActiveWorkout,
-                universalStrengthData = universalStrengthData,
-                volumeLoadData = volumeLoadData,
-                workoutDensityData = workoutDensityData,
-                workoutEfficiencyData = workoutEfficiencyData,
-                progressionData = progressionData,
-                weeklyProgressData = weeklyProgressData
-            )
-            2 -> BodyProgressTab(
+            1 -> BodyProgressTab(
                 measurementData = measurementData,
                 isLoading = isLoading
             )
-            3 -> PersonalRecordsTab(
+            2 -> PersonalRecordsTab(
                 volumeBasedPersonalRecords = volumeBasedPersonalRecords,
                 isLoading = isLoading,
                 weightUnit = weightUnit
             )
-            4 -> HistoryTab(
+            3 -> HistoryTab(
                 items = workoutHistoryDisplay,
                 onNavigateToWorkoutDetail = onNavigateToWorkoutDetail
             )
@@ -456,108 +444,7 @@ private fun OverviewTab(
     }
 }
 
-@Composable
-private fun StrengthProgressTab(
-    strengthData: List<Pair<Date, Map<String, Double>>>,
-    volumeData: List<Pair<Date, Double>>,
-    isLoading: Boolean,
-    weightUnit: String,
-    onNavigateToActiveWorkout: (Long) -> Unit,
-    universalStrengthData: List<Pair<Date, Double>>,
-    volumeLoadData: List<Pair<Date, Double>>,
-    workoutDensityData: List<Pair<Date, Double>>,
-    workoutEfficiencyData: List<Pair<Date, Double>>,
-    progressionData: List<Pair<Date, Double>>,
-    weeklyProgressData: List<Pair<Date, Double>>
-) {
-    val hasData = strengthData.isNotEmpty() || volumeData.isNotEmpty() || universalStrengthData.isNotEmpty() || 
-                  volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty()
-    
-    // Get active workout session
-    val workoutsViewModel: WorkoutsViewModel = hiltViewModel()
-    val activeSession by workoutsViewModel.activeSessionFlow.collectAsStateWithLifecycle(initialValue = null)
-    val shouldShowResumeButton = activeSession?.workoutId != null && activeSession?.workoutId != 0L
-    
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (!hasData && !isLoading) {
-            item {
-                FeaturePlaceholderCard(
-                    title = "No Strength Data",
-                    description = "Complete workouts with strength exercises to see your 1RM progression charts here.",
-                    icon = Icons.AutoMirrored.Filled.TrendingUp
-                )
-            }
-        } else {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Strength Progress",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    // Resume button - only show if there's an active workout
-                    if (shouldShowResumeButton) {
-                        val workoutId = activeSession?.workoutId ?: 0L
-                        Button(
-                            onClick = { onNavigateToActiveWorkout(workoutId) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Resume")
-                        }
-                    }
-                }
-            }
 
-            item {
-                UniversalStrengthChart(
-                    relativeStrengthData = universalStrengthData,
-                    volumeLoadData = volumeLoadData,
-                    modifier = Modifier,
-                    title = "Universal Strength Progress",
-                    weightUnit = weightUnit
-                )
-            }
-
-            item {
-                WorkoutDensityChart(
-                    densityData = workoutDensityData,
-                    efficiencyData = workoutEfficiencyData,
-                    modifier = Modifier,
-                    title = "Workout Efficiency",
-                    weightUnit = weightUnit
-                )
-            }
-
-            item {
-                ProgressionChart(
-                    improvementData = progressionData,
-                    progressionRateData = weeklyProgressData,
-                    modifier = Modifier,
-                    title = "Progression Tracking"
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun PersonalRecordsTab(
@@ -565,6 +452,25 @@ private fun PersonalRecordsTab(
     isLoading: Boolean,
     weightUnit: String
 ) {
+    var searchQuery by remember { mutableStateOf("") }
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    
+    val filteredRecords = remember(volumeBasedPersonalRecords, searchQuery) {
+        if (searchQuery.isBlank()) {
+            volumeBasedPersonalRecords
+        } else {
+            volumeBasedPersonalRecords.filter { record ->
+                record.exerciseName.contains(searchQuery, ignoreCase = true) ||
+                record.exerciseCategory.contains(searchQuery, ignoreCase = true) ||
+                record.equipment.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+    
+    val recordsByCategory = remember(filteredRecords) {
+        filteredRecords.groupBy { it.exerciseCategory }
+    }
+    
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -579,6 +485,19 @@ private fun PersonalRecordsTab(
                 fontWeight = FontWeight.Bold
             )
         }
+        
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search exercises...") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                singleLine = true
+            )
+        }
 
         if (volumeBasedPersonalRecords.isEmpty() && !isLoading) {
             item {
@@ -588,14 +507,36 @@ private fun PersonalRecordsTab(
                     icon = Icons.Default.Star
                 )
             }
-        } else {
+        } else if (filteredRecords.isEmpty()) {
             item {
-                VolumeBasedPersonalRecordsCard(
-                    personalRecords = volumeBasedPersonalRecords,
-                    modifier = Modifier,
-                    title = "All Volume PRs",
-                    weightUnit = weightUnit
+                FeaturePlaceholderCard(
+                    title = "No Records Found",
+                    description = if (searchQuery.isBlank()) "No personal records found" else "No records match your search",
+                    icon = Icons.Default.Search
                 )
+            }
+        } else {
+            recordsByCategory.forEach { (category, records) ->
+                item {
+                    Text(
+                        text = category.replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                items(records) { record ->
+                    PersonalRecordItem(
+                        record = record,
+                        dateFormat = dateFormat,
+                        weightUnit = weightUnit
+                    )
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
@@ -773,6 +714,85 @@ private fun PersonalRecordCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+        }
+    }
+}
+
+@Composable
+private fun PersonalRecordItem(
+    record: com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord,
+    dateFormat: SimpleDateFormat,
+    weightUnit: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = record.exerciseName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = when (record.equipment.lowercase()) {
+                            "barbell" -> Icons.Default.FitnessCenter
+                            "dumbbell" -> Icons.Default.SportsGymnastics
+                            "machine" -> Icons.Default.Build
+                            "bodyweight" -> Icons.Default.Person
+                            "cable" -> Icons.Default.Cable
+                            else -> Icons.Default.FitnessCenter
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = record.equipment.replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Text(
+                    text = dateFormat.format(record.achievedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "${record.volume.toInt()} $weightUnit",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Text(
+                    text = "${record.weight.toInt()} × ${record.reps}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

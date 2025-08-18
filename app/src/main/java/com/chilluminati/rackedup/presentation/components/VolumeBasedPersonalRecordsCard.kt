@@ -1,7 +1,8 @@
 package com.chilluminati.rackedup.presentation.components
 
 import androidx.compose.foundation.layout.*
- 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ fun VolumeBasedPersonalRecordsCard(
     weightUnit: String = "kg"
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    var showAllRecordsDialog by remember { mutableStateOf(false) }
     
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -77,14 +79,24 @@ fun VolumeBasedPersonalRecordsCard(
                     recordsByCategory.forEach { (category, records) ->
                         CategorySection(
                             category = category,
-                            records = records.take(5), // Show top 5 per category
+                            records = records,
                             dateFormat = dateFormat,
-                            weightUnit = weightUnit
+                            weightUnit = weightUnit,
+                            onShowMore = { showAllRecordsDialog = true }
                         )
                     }
                 }
             }
         }
+    }
+    
+    // Show all records dialog
+    if (showAllRecordsDialog) {
+        AllRecordsDialog(
+            personalRecords = personalRecords,
+            weightUnit = weightUnit,
+            onDismiss = { showAllRecordsDialog = false }
+        )
     }
 }
 
@@ -93,11 +105,15 @@ private fun CategorySection(
     category: String,
     records: List<VolumeBasedPersonalRecord>,
     dateFormat: SimpleDateFormat,
-    weightUnit: String
+    weightUnit: String,
+    onShowMore: () -> Unit
 ) {
+    val displayRecords = records.take(3)
+    val hasMoreRecords = records.size > 3
+    
     Column {
         Text(
-            text = category,
+            text = category.replaceFirstChar { it.uppercase() },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -105,12 +121,26 @@ private fun CategorySection(
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        records.forEach { record ->
+        displayRecords.forEach { record ->
             PersonalRecordItem(
                 record = record,
                 dateFormat = dateFormat,
                 weightUnit = weightUnit
             )
+        }
+        
+        if (hasMoreRecords) {
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = onShowMore,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Show more (${records.size - 3} more)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -161,7 +191,7 @@ private fun PersonalRecordItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = record.equipment,
+                        text = record.equipment.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -192,4 +222,109 @@ private fun PersonalRecordItem(
             }
         }
     }
+}
+
+@Composable
+private fun AllRecordsDialog(
+    personalRecords: List<VolumeBasedPersonalRecord>,
+    weightUnit: String,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    
+    val filteredRecords = remember(personalRecords, searchQuery) {
+        if (searchQuery.isBlank()) {
+            personalRecords
+        } else {
+            personalRecords.filter { record ->
+                record.exerciseName.contains(searchQuery, ignoreCase = true) ||
+                record.exerciseCategory.contains(searchQuery, ignoreCase = true) ||
+                record.equipment.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+    
+    val recordsByCategory = remember(filteredRecords) {
+        filteredRecords.groupBy { it.exerciseCategory }
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "All Personal Records",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                // Search field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search exercises...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    singleLine = true
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Records list
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (filteredRecords.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (searchQuery.isBlank()) "No personal records found" else "No records match your search",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        recordsByCategory.forEach { (category, records) ->
+                            item {
+                                Text(
+                                    text = category.replaceFirstChar { it.uppercase() },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            
+                            items(records) { record ->
+                                PersonalRecordItem(
+                                    record = record,
+                                    dateFormat = dateFormat,
+                                    weightUnit = weightUnit
+                                )
+                            }
+                            
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
