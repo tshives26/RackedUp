@@ -117,3 +117,48 @@ app/schemas/
 
 # Generated files from annotation processors
 app/build/generated/
+
+# Serena AI coding agent - exclude cache/logs but keep config
+.serena/
+!.serena/project.yml
+!.serena/contexts/
+!.serena/memory/
+!.serena/config/
+!.serena/tools/
+!.serena/scripts/
+!.serena/config/language_server.toml
+serena-env/
+start-serena-mcp.bat
+SERENA_SETUP_COMPLETE.md
+serena-kotlin-helper.ps1
+
+# MCP (Model Context Protocol) - exclude cache/logs but keep config
+.mcp/
+!.mcp/servers.json
+.mcp.json
+
+# Additional optimization patterns
+# Temporary project files
+tatus
+Serena
+TO_DO
+
+# Unused assets (if not referenced in code)
+app/src/main/assets/exercises/
+
+# Empty resource directories (Compose apps don't use these)
+app/src/main/res/layout/
+app/src/main/res/menu/
+app/src/main/res/navigation/
+app/src/main/res/font/
+
+# Example test files (template files)
+app/src/test/java/com/chilluminati/rackedup/ExampleUnitTest.kt
+app/src/androidTest/java/com/chilluminati/rackedup/ExampleInstrumentedTest.kt
+
+# Unused drawable icons (old Material Design icons)
+app/src/main/res/drawable/ic_dashboard_black_24dp.xml
+app/src/main/res/drawable/ic_home_black_24dp.xml
+app/src/main/res/drawable/ic_notifications_black_24dp.xml
+app/src/main/res/drawable/playstore_icon.png
+app/src/main/res/drawable/rackedup.png
