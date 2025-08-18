@@ -162,3 +162,6 @@ app/src/main/res/drawable/ic_home_black_24dp.xml
 app/src/main/res/drawable/ic_notifications_black_24dp.xml
 app/src/main/res/drawable/playstore_icon.png
 app/src/main/res/drawable/rackedup.png
+
+# Project documentation and sensitive files
+MASTER_PROJECT_GUIDE.md
