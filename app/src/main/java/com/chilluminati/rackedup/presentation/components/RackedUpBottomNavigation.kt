@@ -2,6 +2,7 @@ package com.chilluminati.rackedup.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -27,11 +28,11 @@ fun RackedUpBottomNavigation(
     val currentDestination = navBackStackEntry?.destination
 
     Surface(
-        modifier = modifier
-            .shadow(12.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 8.dp,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, MaterialTheme.shapes.medium),
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        tonalElevation = 0.dp
     ) {
         NavigationBar(
             modifier = Modifier
@@ -43,11 +44,6 @@ fun RackedUpBottomNavigation(
                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
                     )
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                 ),
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
             tonalElevation = 0.dp

@@ -105,7 +105,7 @@ object AppTextFieldDefaults {
     @Composable
     fun outlinedColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.secondary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         focusedLabelColor = MaterialTheme.colorScheme.onSurface,
         unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
         cursorColor = MaterialTheme.colorScheme.tertiary,
@@ -184,18 +184,13 @@ fun GlassmorphismCard(
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f)
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                         ),
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset.Infinite
                     )
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                    shape = MaterialTheme.shapes.medium
                 )
                 .padding(16.dp)
         ) {

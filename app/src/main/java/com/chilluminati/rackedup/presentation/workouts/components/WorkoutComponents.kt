@@ -666,8 +666,8 @@ fun SetRow(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
                     disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 ),
                 textStyle = MaterialTheme.typography.bodyMedium
@@ -700,8 +700,8 @@ fun SetRow(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
                     disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 ),
                 textStyle = MaterialTheme.typography.bodyMedium

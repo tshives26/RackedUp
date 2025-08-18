@@ -93,60 +93,52 @@ fun QuickStatCard(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.surface
                         ),
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset.Infinite
                     )
                 )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                    shape = MaterialTheme.shapes.medium
-                )
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-                                )
-                            )
-                        ),
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (!valueSuffix.isNullOrBlank()) {
-                        Spacer(Modifier.width(4.dp))
+                    valueSuffix?.let {
                         Text(
-                            text = valueSuffix,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
                         )
                     }
                 }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -180,17 +172,12 @@ fun RecentWorkoutCard(
                     brush = androidx.compose.ui.graphics.Brush.linearGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
                             MaterialTheme.colorScheme.surface
                         ),
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset.Infinite
                     )
-                )
-                .border(
-                    width = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                    shape = MaterialTheme.shapes.medium
                 )
         ) {
             Row(
@@ -201,54 +188,47 @@ fun RecentWorkoutCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    // Program title
                     Text(
                         text = workoutName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    
-                    // Program day
-                    if (programDay != null) {
+                    programDay?.let {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = programDay,
+                            text = it,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
-                    // Meta row (e.g., "18 sets • 54 min")
-                    if (metaText != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    metaText?.let {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = metaText,
+                            text = it,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
-                    // Secondary metric (labeled total volume)
-                    if (volumeLabel != null) {
-                        Text(
-                            text = volumeLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
                 }
                 
-                // Date with subtle gradient background
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Text(
-                        text = date,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                volumeLabel?.let {
+                    Column(
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
