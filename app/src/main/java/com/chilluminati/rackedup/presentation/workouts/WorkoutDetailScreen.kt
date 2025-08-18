@@ -35,6 +35,7 @@ fun WorkoutDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
+    val weightUnit by viewModel.weightUnit.collectAsStateWithLifecycle(initialValue = "lbs")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     // Load workout details when screen loads
@@ -53,42 +54,17 @@ fun WorkoutDetailScreen(
         // Top App Bar
         TopAppBar(
             title = { 
-                Text(uiState.workout?.name ?: "Workout Details") 
+                Text(
+                    text = uiState.workout?.name ?: "Workout Details",
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                ) 
             },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back)
-                    )
-                }
-            },
-            actions = {
-                uiState.workout?.let { workout ->
-                    // Favorite toggle
-                    IconButton(onClick = { 
-                        viewModel.updateWorkout(workout.copy(isFavorite = !workout.isFavorite))
-                    }) {
-                        Icon(
-                            imageVector = if (workout.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Add to favorites",
-                            tint = if (workout.isFavorite) MaterialTheme.colorScheme.error else LocalContentColor.current
-                        )
-                    }
-                    // Quick 1-5 rating chips to enable rating achievements
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        (1..5).forEach { r ->
-                            AssistChip(
-                                onClick = { viewModel.updateWorkout(workout.copy(rating = r)) },
-                                label = { Text(r.toString()) }
-                            )
-                        }
-                    }
-                }
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share workout"
                     )
                 }
             }
@@ -111,7 +87,7 @@ fun WorkoutDetailScreen(
             } else if (uiState.workout != null) {
                 // Workout Summary
                 item {
-                    WorkoutSummaryCard(uiState)
+                    WorkoutSummaryCard(uiState, weightUnit)
                 }
 
                 // Exercise List
@@ -132,6 +108,7 @@ fun WorkoutDetailScreen(
                             workoutExercise = workoutExercise,
                             exercise = exercise,
                             sets = sets,
+                            weightUnit = weightUnit,
                             onClick = { 
                                 exercise?.let { onNavigateToExerciseDetail(it.id) }
                             }
@@ -161,7 +138,7 @@ fun WorkoutDetailScreen(
 }
 
 @Composable
-private fun WorkoutSummaryCard(uiState: WorkoutDetailUiState) {
+private fun WorkoutSummaryCard(uiState: WorkoutDetailUiState, weightUnit: String) {
     val workout = uiState.workout ?: return
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     
@@ -198,7 +175,7 @@ private fun WorkoutSummaryCard(uiState: WorkoutDetailUiState) {
             ) {
                 StatItem("Exercises", uiState.totalExercises.toString())
                 StatItem("Sets", uiState.totalSets.toString())
-                StatItem("Volume", "${String.format("%.0f", uiState.totalVolume)} lbs")
+                StatItem("Volume", formatVolume(uiState.totalVolume, weightUnit))
                 StatItem("PR's", uiState.personalRecords.toString())
             }
         }
@@ -227,6 +204,7 @@ private fun ExerciseDetailCard(
     workoutExercise: WorkoutExercise,
     exercise: Exercise?,
     sets: List<ExerciseSet>,
+    weightUnit: String,
     onClick: () -> Unit
 ) {
     Card(
@@ -253,26 +231,38 @@ private fun ExerciseDetailCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
-            // Show set performance
-            val performance = sets.mapIndexed { index, set ->
-                val weight = set.weight?.let { "${it.toInt()} lbs" } ?: ""
-                val reps = set.reps?.toString() ?: ""
-                when {
-                    weight.isNotEmpty() && reps.isNotEmpty() -> "$weight × $reps"
-                    weight.isNotEmpty() -> weight
-                    reps.isNotEmpty() -> "$reps reps"
-                    set.durationSeconds != null -> "${set.durationSeconds}s"
-                    else -> "Set ${index + 1}"
+            // Show sets in a clean, readable format
+            if (sets.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    sets.forEachIndexed { index, set ->
+                        val weight = set.weight?.let { "${it.toInt()} $weightUnit" } ?: ""
+                        val reps = set.reps?.toString() ?: ""
+                        val duration = set.durationSeconds?.let { "${it}s" } ?: ""
+                        
+                        val setText = when {
+                            weight.isNotEmpty() && reps.isNotEmpty() -> "$weight × $reps reps"
+                            weight.isNotEmpty() -> weight
+                            reps.isNotEmpty() -> "$reps reps"
+                            duration.isNotEmpty() -> duration
+                            else -> "Set ${index + 1}"
+                        }
+                        
+                        Text(
+                            text = "Set ${index + 1}: $setText",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }.joinToString(", ")
-            
-            Text(
-                text = performance.ifEmpty { "No sets recorded" },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            } else {
+                Text(
+                    text = "No sets recorded",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -309,5 +299,16 @@ private fun WorkoutNotesCard(notes: String) {
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+    }
+}
+
+/**
+ * Format volume with proper number formatting
+ */
+private fun formatVolume(volume: Double, weightUnit: String): String {
+    return when {
+        volume >= 1000 -> String.format("%.1fK %s", volume / 1000, weightUnit)
+        volume >= 100 -> String.format("%.0f %s", volume, weightUnit)
+        else -> String.format("%.0f %s", volume, weightUnit)
     }
 }

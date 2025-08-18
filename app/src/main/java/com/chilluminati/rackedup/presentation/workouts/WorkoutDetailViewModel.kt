@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chilluminati.rackedup.data.repository.WorkoutRepository
 import com.chilluminati.rackedup.data.repository.ExerciseRepository
+import com.chilluminati.rackedup.data.repository.SettingsRepository
 import com.chilluminati.rackedup.data.database.entity.Workout
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
@@ -22,11 +23,19 @@ import javax.inject.Inject
 class WorkoutDetailViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val settingsRepository: SettingsRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(WorkoutDetailUiState())
     val uiState: StateFlow<WorkoutDetailUiState> = _uiState.asStateFlow()
+    
+    // Weight unit preference for formatting
+    val weightUnit: StateFlow<String> = settingsRepository.weightUnit.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "lbs"
+    )
     
     fun loadWorkoutDetail(workoutId: Long) {
         viewModelScope.launch(ioDispatcher) {

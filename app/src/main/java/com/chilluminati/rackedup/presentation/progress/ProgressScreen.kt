@@ -51,6 +51,7 @@ fun ProgressScreen(
     modifier: Modifier = Modifier,
     initialTab: String? = null
 ) {
+    val weightUnit by viewModel.weightUnit.collectAsStateWithLifecycle(initialValue = "lbs")
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = remember { listOf("Overview", "Body", "PRs", "History") }
 
@@ -79,7 +80,6 @@ fun ProgressScreen(
     val measurementData by viewModel.measurementData.collectAsStateWithLifecycle()
     val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val weightUnit by viewModel.weightUnit.collectAsStateWithLifecycle(initialValue = "kg")
     val workoutHistoryDisplay by viewModel.workoutHistoryDisplay.collectAsStateWithLifecycle()
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
     val monthlyStats by viewModel.monthlyStats.collectAsStateWithLifecycle()
@@ -162,6 +162,7 @@ fun ProgressScreen(
             )
             3 -> HistoryTab(
                 items = workoutHistoryDisplay,
+                weightUnit = weightUnit,
                 onNavigateToWorkoutDetail = onNavigateToWorkoutDetail
             )
         }
@@ -553,6 +554,7 @@ private fun BodyProgressTab(
 @Composable
 private fun HistoryTab(
     items: List<WorkoutHistoryDisplay>,
+    weightUnit: String,
     onNavigateToWorkoutDetail: (Long) -> Unit
 ) {
     LazyColumn(
@@ -597,16 +599,33 @@ private fun HistoryTab(
                         append(item.duration)
                     }
                 }.ifBlank { null }
+                
+                val volumeLabel = if (item.volume > 0.0) {
+                    "Total volume: ${formatVolume(item.volume, weightUnit)}"
+                } else null
+                
                 com.chilluminati.rackedup.presentation.components.RecentWorkoutCard(
                     workoutName = item.title,
                     // Split program title and day if present in the title
                     programDay = item.title.split(" - ").getOrNull(1),
                     date = item.date,
                     metaText = meta,
+                    volumeLabel = volumeLabel,
                     onClick = { onNavigateToWorkoutDetail(item.id) }
                 )
             }
         }
+    }
+}
+
+/**
+ * Format volume with proper number formatting
+ */
+private fun formatVolume(volume: Double, weightUnit: String): String {
+    return when {
+        volume >= 1000 -> String.format("%.1fK %s", volume / 1000, weightUnit)
+        volume >= 100 -> String.format("%.0f %s", volume, weightUnit)
+        else -> String.format("%.0f %s", volume, weightUnit)
     }
 }
 

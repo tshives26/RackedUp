@@ -219,7 +219,8 @@ class ProgressViewModel @Inject constructor(
                             title = title,
                             date = dateStr,
                             duration = durationStr,
-                            sets = setsText
+                            sets = setsText,
+                            volume = workout.totalVolume
                         )
                     )
                 }
@@ -488,5 +489,6 @@ data class WorkoutHistoryDisplay(
     val title: String,
     val date: String,
     val duration: String,
-    val sets: String
+    val sets: String,
+    val volume: Double
 )
