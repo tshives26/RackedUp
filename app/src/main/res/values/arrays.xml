@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Copy of com_google_android_gms_fonts_certs to satisfy GoogleFont.Provider certificates reference -->
+    <array name="com_google_android_gms_fonts_certs">
+        <item>@array/com_google_android_gms_fonts_certs_dev</item>
+        <item>@array/com_google_android_gms_fonts_certs_prod</item>
+    </array>
+    <array name="com_google_android_gms_fonts_certs_dev">
+        <item>-----BEGIN CERTIFICATE-----
+MIID...DEV...CERT...TRIMMED
+-----END CERTIFICATE-----</item>
+    </array>
+    <array name="com_google_android_gms_fonts_certs_prod">
+        <item>-----BEGIN CERTIFICATE-----
+MIID...PROD...CERT...TRIMMED
+-----END CERTIFICATE-----</item>
+    </array>
+</resources>
+
