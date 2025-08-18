@@ -232,10 +232,6 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 - **Discussions**: For general questions and community chat
 - **Email**: For urgent issues and support
 
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tshives26/RackedUp&type=Date)](https://star-history.com/#tshives26/RackedUp&Date)
-
 ---
 
 **Built with ❤️ for the fitness community**
