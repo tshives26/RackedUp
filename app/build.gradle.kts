@@ -167,9 +167,8 @@ dependencies {
     // OkHttp for build-time import fallback and remote fetches
     implementation(libs.okhttp)
 
-        // Startup performance
-        implementation(libs.androidx.profileinstaller)
-        implementation(libs.androidx.core.splashscreen)
+            // Startup performance
+    implementation(libs.androidx.profileinstaller)
 
     // Charts
     implementation(libs.bundles.charts)

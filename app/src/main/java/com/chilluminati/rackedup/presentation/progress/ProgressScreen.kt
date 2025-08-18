@@ -112,10 +112,6 @@ fun ProgressScreen(
                 weightUnit = weightUnit,
                 weeklyStats = weeklyStats,
                 monthlyStats = monthlyStats,
-                totalAllTimeVolume = totalAllTimeVolume,
-                currentStreak = currentStreak,
-                longestStreak = longestStreak,
-                achievementsUnlocked = achievements.count { it.isUnlocked },
                 consistencyData = consistencyData
             )
             1 -> StrengthProgressTab(
@@ -263,10 +259,6 @@ private fun OverviewTab(
     weightUnit: String,
     weeklyStats: WeeklyStats,
     monthlyStats: MonthlyStats,
-    totalAllTimeVolume: Double,
-    currentStreak: Int,
-    longestStreak: Int,
-    achievementsUnlocked: Int,
     consistencyData: List<com.chilluminati.rackedup.data.repository.ConsistencyDataPoint>
 ) {
     val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty()

@@ -259,7 +259,7 @@ private fun CurrentProgramSection(
 						if (!activeProgram.description.isNullOrBlank()) {
 							Spacer(modifier = Modifier.height(6.dp))
 							Text(
-								text = activeProgram.description ?: "",
+								text = activeProgram.description ?: "No description available",
 								style = MaterialTheme.typography.bodyMedium,
 								color = MaterialTheme.colorScheme.onSurfaceVariant,
 								textAlign = TextAlign.Center,

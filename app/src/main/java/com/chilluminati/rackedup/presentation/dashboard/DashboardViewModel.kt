@@ -79,12 +79,14 @@ class DashboardViewModel @Inject constructor(
                         val count = completed.mapNotNull { it.programDayId }.distinct().size
                         val latest = completed.maxByOrNull { it.date.time }
                         val label: String? = try {
-                            val sdf = SimpleDateFormat("MMM d", Locale.getDefault())
                             val dayId = latest?.programDayId
                             if (dayId != null) {
                                 val days = programRepository.getProgramDays(activeProgram.id)
                                 val matched = days.firstOrNull { it.id == dayId }
-                                matched?.let { d -> "Last: ${'$'}{sdf.format(latest.date)} • Day ${'$'}{d.dayNumber} - ${'$'}{d.name}" }
+                                matched?.let { day -> 
+                                    val sdf = SimpleDateFormat("MMM d", Locale.getDefault())
+                                    "Last: ${'$'}{sdf.format(latest.date)} • Day ${'$'}{day.dayNumber} - ${'$'}{day.name}" 
+                                }
                             } else null
                         } catch (_: Exception) { null }
                         count to label

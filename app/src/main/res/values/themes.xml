@@ -14,10 +14,5 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <!-- Pre-Android 12 (API < 31) splash fallback -->
-    <style name="Theme.RackedUp.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowFullscreen">true</item>
-    </style>
+
 </resources>

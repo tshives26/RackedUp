@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
@@ -26,7 +25,6 @@ import com.chilluminati.rackedup.presentation.profile.ProfileViewModel
 import com.chilluminati.rackedup.presentation.profile.SettingsViewModel
 import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
 import com.chilluminati.rackedup.presentation.theme.RackedUpTheme
-import com.chilluminati.rackedup.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 
 import androidx.compose.ui.graphics.Color
@@ -51,18 +49,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            // Keep splash until onboarding state is resolved AND minimum time has passed
+            // Simple custom splash screen
             val profileViewModel: ProfileViewModel = hiltViewModel()
-            val settingsViewModel: SettingsViewModel = hiltViewModel()
             val onboardingState by profileViewModel.onboardingState.collectAsStateWithLifecycle()
-            val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             
-            // Simple splash screen logic
             var showSplash by remember { mutableStateOf(true) }
             
             LaunchedEffect(Unit) {
-                // Show splash for at least 1 second
-                kotlinx.coroutines.delay(1000L)
+                // Show splash for at least 1.5 seconds
+                kotlinx.coroutines.delay(1500L)
                 
                 // Then check if onboarding is complete
                 if (!onboardingState.isLoading) {
@@ -73,28 +68,22 @@ class MainActivity : ComponentActivity() {
             // Also check when onboarding state changes
             LaunchedEffect(onboardingState.isLoading) {
                 if (!onboardingState.isLoading) {
-                    // Add a small delay to ensure minimum splash time
-                    kotlinx.coroutines.delay(100L)
+                    kotlinx.coroutines.delay(200L)
                     showSplash = false
                 }
             }
             
             if (showSplash) {
-                // Show splash screen with theme-appropriate background
-                val backgroundColor = when (settingsState.themeMode) {
-                    SettingsRepository.ThemeMode.DARK -> Color(0xFF1A1A1A) // Dark gray
-                    else -> Color.White
-                }
-                
+                // Simple splash screen with just the logo on black background
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(backgroundColor),
+                        .background(Color(0xFF1A1A1A)),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.rackedup),
-                        contentDescription = "RackedUp Logo",
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "Logo",
                         modifier = Modifier.size(200.dp),
                         contentScale = ContentScale.Fit
                     )

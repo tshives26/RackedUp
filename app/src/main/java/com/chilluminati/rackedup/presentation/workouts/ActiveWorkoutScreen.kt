@@ -322,7 +322,7 @@ fun ActiveWorkoutScreen(
                 onUpdateSet = { set: ExerciseSet ->
                     viewModel.updateSet(set)
                 },
-                onDeleteExercise = { exercise: WorkoutExercise ->
+                onDeleteExercise = { _: WorkoutExercise ->
                     // TODO: Implement delete exercise functionality
                 },
                 onDeleteSet = { set: ExerciseSet ->
@@ -845,10 +845,10 @@ fun SetRow(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var countdown by remember { mutableStateOf(5) }
     
-    val focusManager = LocalFocusManager.current
+    val localFocusManager = LocalFocusManager.current
     val weightFocusRequester = remember { FocusRequester() }
     val repsFocusRequester = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
+    val localKeyboard = LocalSoftwareKeyboardController.current
     
     // Countdown timer for delete confirmation
     LaunchedEffect(showDeleteDialog) {
@@ -900,7 +900,7 @@ fun SetRow(
                         detectTapGestures(
                             onTap = {
                                 // Clear focus when tapping outside input fields
-                                focusManager.clearFocus()
+                                localFocusManager.clearFocus()
                             }
                         )
                     },

@@ -11,10 +11,5 @@
     <!-- Launcher icon background -->
     <color name="ic_launcher_background">#FFFFFF</color>
     
-    <!-- Splash screen colors -->
-    <color name="splash_dark_background">#FF1A1A1A</color>
-    <color name="splash_gradient_start">#FFFFFF</color>
-    <color name="splash_gradient_end">#F5F5F5</color>
-    <color name="splash_text_color">#333333</color>
-    <color name="splash_accent">#666666</color>
+
 </resources>
