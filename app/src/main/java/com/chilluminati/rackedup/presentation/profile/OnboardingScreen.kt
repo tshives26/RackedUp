@@ -110,6 +110,13 @@ fun OnboardingScreen(
             onOnboardingComplete()
         }
     }
+    
+    // Progress to step 1 when profile is created
+    LaunchedEffect(onboardingState.profileCreated) {
+        if (onboardingState.profileCreated && step == 0) {
+            step = 1
+        }
+    }
 
     val focusManager = LocalFocusManager.current
 
@@ -160,13 +167,15 @@ fun OnboardingScreen(
                 )
             }
 
+
+
             when (step) {
                 0 -> OnboardingForm(
                     isLoading = onboardingState.isLoading,
                     error = onboardingState.error,
                     onComplete = { name, birthday, sex ->
                         viewModel.createProfile(name, birthday, sex)
-                        step = 1
+                        // Step will be changed automatically when profile is created
                     },
                     onErrorClear = { viewModel.clearError() }
                 )

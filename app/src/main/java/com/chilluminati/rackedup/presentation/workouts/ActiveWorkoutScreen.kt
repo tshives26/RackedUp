@@ -611,9 +611,13 @@ fun ActiveExerciseCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = exerciseName,
-                    style = MaterialTheme.typography.titleMedium,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = exerciseName,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(
@@ -626,6 +630,28 @@ fun ActiveExerciseCard(
                             )
                         }
                     )
+                    
+                    // Show AMRAP/Until Failure indicator
+                    workoutExercise.repScheme?.let { scheme ->
+                        if (scheme.equals("AMRAP", ignoreCase = true) || 
+                            scheme.equals("Till Failure", ignoreCase = true) ||
+                            scheme.equals("Until Failure", ignoreCase = true) ||
+                            scheme.equals("Failure", ignoreCase = true)) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(
+                                    text = scheme.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(top = 4.dp)
@@ -697,6 +723,7 @@ fun ActiveExerciseCard(
                         isCompleted = set.isCompleted,
                         weightUnit = weightUnit,
                         defaultRestSeconds = defaultRestSeconds,
+                        repScheme = workoutExercise.repScheme,
 
                         onComplete = {
                             onUpdateSet(set.copy(isCompleted = !set.isCompleted))
@@ -714,7 +741,17 @@ fun ActiveExerciseCard(
                 
                 // Add Set button at the bottom
                 TextButton(
-                    onClick = { onAddSet(null, null, null) },
+                    onClick = { 
+                        // For AMRAP/Until Failure exercises, add set with null reps
+                        val isAmrapOrFailure = workoutExercise.repScheme?.let { scheme ->
+                            scheme.equals("AMRAP", ignoreCase = true) || 
+                            scheme.equals("Till Failure", ignoreCase = true) ||
+                            scheme.equals("Until Failure", ignoreCase = true) ||
+                            scheme.equals("Failure", ignoreCase = true)
+                        } ?: false
+                        
+                        onAddSet(null, if (isAmrapOrFailure) null else 0, null)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(8.dp),
                     colors = ButtonDefaults.textButtonColors(
@@ -815,332 +852,7 @@ fun ActiveExerciseCard(
     }
 }
 
-@Composable
-fun SetRow(
-    set: ExerciseSet,
-    setNumber: Int,
-    weight: String,
-    reps: String,
-    isCompleted: Boolean,
-    weightUnit: String,
-    defaultRestSeconds: Int,
-    repScheme: String? = null,
-    onComplete: () -> Unit,
-    onUpdateSet: (String, String) -> Unit,
-    onStartRest: (Int) -> Unit,
-    onDeleteSet: (ExerciseSet) -> Unit
-) {
-    var currentWeight by remember(weight) { mutableStateOf(if (weight.isBlank()) "0" else weight) }
-    var currentReps by remember(reps) { mutableStateOf(reps) }
-    var showDeleteMode by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var countdown by remember { mutableStateOf(5) }
-    
-    // Check if this is an AMRAP/Until Failure exercise
-    val isAmrapOrFailure = repScheme?.let { scheme ->
-        scheme.equals("AMRAP", ignoreCase = true) || 
-        scheme.equals("Till Failure", ignoreCase = true) ||
-        scheme.equals("Until Failure", ignoreCase = true) ||
-        scheme.equals("Failure", ignoreCase = true)
-    } ?: false
-    
-    val localFocusManager = LocalFocusManager.current
-    val weightFocusRequester = remember { FocusRequester() }
-    val repsFocusRequester = remember { FocusRequester() }
-    val localKeyboard = LocalSoftwareKeyboardController.current
-    
-    // Countdown timer for delete confirmation
-    LaunchedEffect(showDeleteDialog) {
-        if (showDeleteDialog) {
-            countdown = 5
-            while (countdown > 0) {
-                delay(1000)
-                countdown--
-            }
-        }
-    }
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            // Only allow swipe from right to left (EndToStart)
-            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                showDeleteDialog = true
-                false
-            } else {
-                false
-            }
-        },
-        positionalThreshold = { totalDistance -> totalDistance * 0.85f }
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete set",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false,
-        content = {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = {
-                                // Clear focus when tapping outside input fields
-                                localFocusManager.clearFocus()
-                            }
-                        )
-                    },
-                color = if (isCompleted)
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                else
-                    MaterialTheme.colorScheme.surface,
-                shape = RectangleShape
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Set number or delete button
-                    Surface(
-                        color = if (showDeleteMode)
-                            MaterialTheme.colorScheme.errorContainer
-                        else if (isCompleted)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        else
-                            MaterialTheme.colorScheme.secondaryContainer,
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.pointerInput(Unit) {
-                            detectTapGestures(
-                                onLongPress = { showDeleteMode = true },
-                                onTap = {
-                                    if (showDeleteMode) {
-                                        showDeleteDialog = true
-                                    }
-                                }
-                            )
-                        }
-                    ) {
-                        if (showDeleteMode) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Delete set",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier
-                                    .width(32.dp)
-                                    .padding(vertical = 4.dp)
-                            )
-                        } else {
-                            Text(
-                                text = "$setNumber",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isCompleted)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier
-                                    .width(32.dp)
-                                    .padding(vertical = 4.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    // Delete confirmation dialog
-                    if (showDeleteDialog) {
-                        AlertDialog(
-                            onDismissRequest = {
-                                showDeleteDialog = false
-                                showDeleteMode = false
-                                countdown = 5
-                            },
-                            title = { Text("Delete Set") },
-                            text = {
-                                Text(
-                                    if (countdown > 0) {
-                                        "Are you sure you want to delete set $setNumber? Click Delete in $countdown seconds to confirm."
-                                    } else {
-                                        "Are you sure you want to delete set $setNumber?"
-                                    }
-                                )
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        if (countdown <= 0) {
-                                            onDeleteSet(set)
-                                            showDeleteDialog = false
-                                            showDeleteMode = false
-                                        }
-                                    },
-                                    enabled = countdown <= 0,
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error,
-                                        disabledContentColor = MaterialTheme.colorScheme.error.copy(alpha = 0.38f)
-                                    )
-                                ) {
-                                    Text(if (countdown > 0) "Delete ($countdown)" else "Delete")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(
-                                    onClick = {
-                                        showDeleteDialog = false
-                                        showDeleteMode = false
-                                        countdown = 5
-                                    }
-                                ) {
-                                    Text("Cancel")
-                                }
-                            }
-                        )
-                    }
-
-                    // Weight input
-                    OutlinedTextField(
-                        value = currentWeight,
-                        onValueChange = {
-                            // Only allow whole numbers and prevent leading zeros
-                            val filtered = it.filter { char -> char.isDigit() }
-                            val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                                filtered.substring(1)
-                            } else {
-                                filtered
-                            }
-                            currentWeight = cleaned
-                            onUpdateSet(cleaned, currentReps)
-                        },
-                        placeholder = { Text("0") },
-                        suffix = { Text(" $weightUnit") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(weightFocusRequester),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                keyboard?.hide()
-                            }
-                        ),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-                            disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        ),
-                        textStyle = MaterialTheme.typography.bodyMedium
-                    )
-
-                    // Reps input
-                    OutlinedTextField(
-                        value = if (isAmrapOrFailure) repScheme ?: "AMRAP" else currentReps,
-                        onValueChange = {
-                            if (!isAmrapOrFailure) {
-                                // Only allow whole numbers and prevent leading zeros
-                                val filtered = it.filter { char -> char.isDigit() }
-                                val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                                    filtered.substring(1)
-                                } else {
-                                    filtered
-                                }
-                                currentReps = cleaned
-                                onUpdateSet(currentWeight, cleaned)
-                            }
-                        },
-                        placeholder = { Text(if (isAmrapOrFailure) "AMRAP" else "reps") },
-                        suffix = {
-                            // Show appropriate suffix based on exercise type
-                            Text(if (isAmrapOrFailure) "" else " reps")
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(repsFocusRequester),
-                        singleLine = true,
-                        enabled = !isAmrapOrFailure,
-                        readOnly = isAmrapOrFailure,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                keyboard?.hide()
-                            }
-                        ),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-                            disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        ),
-                        textStyle = MaterialTheme.typography.bodyMedium
-                    )
-
-                    // Modern complete toggle button
-                    if (isCompleted) {
-                        androidx.compose.material3.FilledIconButton(
-                            onClick = {
-                                onComplete()
-                                focusManager.clearFocus()
-                                keyboard?.hide()
-                            },
-                            modifier = Modifier.size(40.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Unmark set"
-                            )
-                        }
-                    } else {
-                        androidx.compose.material3.OutlinedIconButton(
-                            onClick = {
-                                onComplete()
-                                onStartRest(defaultRestSeconds)
-                                focusManager.clearFocus()
-                                keyboard?.hide()
-                            },
-                            modifier = Modifier.size(40.dp),
-                            colors = IconButtonDefaults.outlinedIconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Complete set"
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    )
-}
 
 @Composable
 fun SetInputRow(

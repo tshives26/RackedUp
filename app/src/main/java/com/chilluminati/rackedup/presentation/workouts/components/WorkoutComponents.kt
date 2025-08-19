@@ -503,6 +503,7 @@ fun SetRow(
     isCompleted: Boolean,
     weightUnit: String,
     defaultRestSeconds: Int,
+    repScheme: String? = null,
     onComplete: () -> Unit,
     onUpdateSet: (String, String) -> Unit,
     onStartRest: (Int) -> Unit,
@@ -513,6 +514,14 @@ fun SetRow(
     var showDeleteMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var countdown by remember { mutableStateOf(5) }
+    
+    // Check if this is an AMRAP/Until Failure exercise
+    val isAmrapOrFailure = repScheme?.let { scheme ->
+        scheme.equals("AMRAP", ignoreCase = true) || 
+        scheme.equals("Till Failure", ignoreCase = true) ||
+        scheme.equals("Until Failure", ignoreCase = true) ||
+        scheme.equals("Failure", ignoreCase = true)
+    } ?: false
     
     // Countdown timer for delete confirmation
     LaunchedEffect(showDeleteDialog) {
@@ -676,38 +685,56 @@ fun SetRow(
             )
 
             // Reps input
-            OutlinedTextField(
-                value = currentReps,
-                onValueChange = {
-                    // Only allow whole numbers and prevent leading zeros
-                    val filtered = it.filter { char -> char.isDigit() }
-                    val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                        filtered.substring(1)
-                    } else {
-                        filtered
-                    }
-                    currentReps = cleaned
-                    onUpdateSet(currentWeight, cleaned)
-                },
-                placeholder = { Text("reps") },
-                suffix = {
-                    // Always show explicit unit to avoid ambiguity
-                    Text(" reps")
-                },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium
-            )
+            Surface(
+                color = if (isAmrapOrFailure) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.weight(1f)
+            ) {
+                if (isAmrapOrFailure) {
+                    // Show "UNTIL FAILURE" text for AMRAP/Until Failure exercises
+                    Text(
+                        text = "UNTIL FAILURE",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    // Regular reps input field for non-AMRAP exercises
+                    OutlinedTextField(
+                        value = currentReps,
+                        onValueChange = {
+                            // Only allow whole numbers and prevent leading zeros
+                            val filtered = it.filter { char -> char.isDigit() }
+                            val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                filtered.substring(1)
+                            } else {
+                                filtered
+                            }
+                            currentReps = cleaned
+                            onUpdateSet(currentWeight, cleaned)
+                        },
+                        placeholder = { Text("reps") },
+                        suffix = { Text(" reps") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                            disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
 
             // Modern complete toggle button
             val focusManager = LocalFocusManager.current

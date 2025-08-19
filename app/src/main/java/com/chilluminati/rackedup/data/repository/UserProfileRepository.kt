@@ -34,11 +34,15 @@ class UserProfileRepository @Inject constructor(
         sex: String? = null,
         email: String? = null
     ): Long {
+        // Deactivate all existing profiles first
+        userProfileDao.deactivateAllProfiles()
+        
         val profile = UserProfile(
             name = name,
             birthday = birthday,
             sex = sex,
             email = email,
+            isActive = true, // Explicitly set as active
             createdAt = Date(),
             updatedAt = Date()
         )
@@ -105,5 +109,22 @@ class UserProfileRepository @Inject constructor(
         val diffInMillis = today.time - birthday.time
         val diffInYears = diffInMillis / (1000L * 60 * 60 * 24 * 365)
         return diffInYears.toInt()
+    }
+    
+    /**
+     * Debug method to get all profiles and their status
+     */
+    suspend fun debugGetAllProfiles(): List<UserProfile> {
+        return userProfileDao.getAllProfiles()
+    }
+    
+    /**
+     * Debug method to clear all profiles (for testing only)
+     */
+    suspend fun debugClearAllProfiles() {
+        val allProfiles = userProfileDao.getAllProfiles()
+        allProfiles.forEach { profile ->
+            userProfileDao.deleteProfile(profile)
+        }
     }
 }

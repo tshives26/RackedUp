@@ -264,7 +264,12 @@ class WorkoutRepository @Inject constructor(
                 workoutId = workoutId,
                 exerciseId = exerciseId,
                 orderIndex = orderIndex,
-                repScheme = programExercise?.reps
+                repScheme = when {
+                    programExercise?.tillFailure == true -> "Until Failure"
+                    programExercise?.reps?.equals("AMRAP", ignoreCase = true) == true -> "AMRAP"
+                    programExercise?.reps?.contains("Failure", ignoreCase = true) == true -> "Until Failure"
+                    else -> programExercise?.reps
+                }
             )
             val workoutExerciseId = workoutExerciseDao.insertWorkoutExercise(workoutExercise)
             
