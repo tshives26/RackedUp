@@ -215,8 +215,8 @@ class ProgressRepository @Inject constructor(
                         val volume = set.weight * set.reps
                         
                         // Check if this is a new PR
-                        val existingPR = personalRecordDao.getPersonalRecords(exerciseId).first()
-                            .find { it.recordType == "Volume" }
+                        val existingPRs = personalRecordDao.getPersonalRecordsSync(exerciseId)
+                        val existingPR = existingPRs.find { it.recordType == "Volume" }
                         
                         if (existingPR == null || volume > (existingPR.volume ?: 0.0)) {
                             val exercise = exerciseMap[exerciseId]

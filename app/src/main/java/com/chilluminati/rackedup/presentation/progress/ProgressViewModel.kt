@@ -442,8 +442,29 @@ class ProgressViewModel @Inject constructor(
             try {
                 val workouts = workoutRepository.getAllWorkouts().first()
                 refreshStats(workouts)
+                // Explicitly refresh PR data to ensure it's up to date
+                refreshPersonalRecords()
             } catch (e: Exception) {
                 println("Error refreshing stats: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Refresh personal records data specifically
+     */
+    fun refreshPersonalRecords() {
+        viewModelScope.launch {
+            try {
+                // Load personal records
+                val records = progressRepository.getPersonalRecords()
+                _personalRecords.value = records.sortedByDescending { it.achievedAt }
+
+                // Load volume-based personal records
+                val volumeRecords = progressRepository.getVolumeBasedPersonalRecords()
+                _volumeBasedPersonalRecords.value = volumeRecords
+            } catch (e: Exception) {
+                println("Error refreshing personal records: ${e.message}")
             }
         }
     }

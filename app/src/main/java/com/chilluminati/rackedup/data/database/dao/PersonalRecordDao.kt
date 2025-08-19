@@ -9,6 +9,9 @@ interface PersonalRecordDao {
     @Query("SELECT * FROM personal_records WHERE exercise_id = :exerciseId ORDER BY achieved_at DESC")
     fun getPersonalRecords(exerciseId: Long): Flow<List<PersonalRecord>>
 
+    @Query("SELECT * FROM personal_records WHERE exercise_id = :exerciseId ORDER BY achieved_at DESC")
+    suspend fun getPersonalRecordsSync(exerciseId: Long): List<PersonalRecord>
+
     @Query("SELECT * FROM personal_records")
     suspend fun getAllPersonalRecords(): List<PersonalRecord>
 

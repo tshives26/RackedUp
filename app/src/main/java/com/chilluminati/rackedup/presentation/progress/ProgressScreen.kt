@@ -78,6 +78,11 @@ fun ProgressScreen(
         }
     }
     
+    // Refresh PR data when the screen becomes active (in case user navigates here after workout completion)
+    LaunchedEffect(Unit) {
+        viewModel.refreshPersonalRecords()
+    }
+    
     val volumeData by viewModel.volumeData.collectAsStateWithLifecycle()
     val strengthData by viewModel.strengthData.collectAsStateWithLifecycle()
     val measurementData by viewModel.measurementData.collectAsStateWithLifecycle()
