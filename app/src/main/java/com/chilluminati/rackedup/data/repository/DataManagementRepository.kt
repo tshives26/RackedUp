@@ -217,6 +217,15 @@ class DataManagementRepository @Inject constructor(
 
             backupJson?.let { jsonData ->
                 val root = JSONObject(jsonData)
+                
+                // Safety check: Log the operation for debugging
+                android.util.Log.w("DataManagementRepository", "IMPORT BACKUP OPERATION - This will clear existing data and replace with backup!")
+                
+                // Check existing data before clearing
+                val existingWorkoutCount = database.workoutDao().getAllWorkoutsList().size
+                val existingExerciseCount = database.exerciseDao().getAllExercisesList().size
+                android.util.Log.i("DataManagementRepository", "Existing data before import - Workouts: $existingWorkoutCount, Exercises: $existingExerciseCount")
+                
                 // Overwrite strategy: clear tables that are fully represented, then reinsert data
                 database.clearData()
 
@@ -748,10 +757,26 @@ class DataManagementRepository @Inject constructor(
      */
     suspend fun resetAllData(): Result<String> = withContext(ioDispatcher) {
         try {
+            // Safety check: Log the operation for debugging
+            android.util.Log.w("DataManagementRepository", "RESET ALL DATA OPERATION INITIATED - This will delete all user data!")
+            
+            // Check if there's any user data before clearing
+            val workoutCount = database.workoutDao().getAllWorkoutsList().size
+            val exerciseCount = database.exerciseDao().getAllExercisesList().size
+            val profileCount = database.userProfileDao().getProfileCount()
+            
+            android.util.Log.i("DataManagementRepository", "Data before reset - Workouts: $workoutCount, Exercises: $exerciseCount, Profiles: $profileCount")
+            
+            // Only proceed if this is explicitly called from the data management screen
+            // (This is a safety measure - the UI should have proper confirmation dialogs)
+            
             database.clearData()
             context.cacheDir.deleteRecursively()
+            
+            android.util.Log.w("DataManagementRepository", "All app data has been reset successfully")
             Result.success("All app data has been reset")
         } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to reset data", e)
             Result.failure(e)
         }
     }

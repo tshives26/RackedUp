@@ -1,5 +1,5 @@
 [versions]
-agp = "8.12.0"
+agp = "8.12.1"
 kotlin = "1.9.22"
 kotlinCompilerExtension = "1.5.8"
 composeCompiler = "1.5.8"

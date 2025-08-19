@@ -61,7 +61,8 @@ abstract class RackedUpDatabase : RoomDatabase() {
                     RackedUpDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration()
+                    // Remove fallbackToDestructiveMigration() to prevent data loss
+                    // Database migrations should be handled in DatabaseModule
                     .build()
                 INSTANCE = instance
                 instance
