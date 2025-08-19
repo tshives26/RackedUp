@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Singleton
 class UserProfileRepository @Inject constructor(
-    private val userProfileDao: UserProfileDao
+    val userProfileDao: UserProfileDao
 ) {
     
     /**

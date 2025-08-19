@@ -307,9 +307,11 @@ fun ActiveWorkoutScreen(
                     weightUnit = weightUnit,
                     defaultRestSeconds = uiState.defaultRestSeconds,
                                     onStartRest = { restTimeSeconds: Int ->
-                    isResting = true
-                    restTimer = restTimeSeconds
-                    viewModel.updateSessionTimers(isResting = true, restRemainingSeconds = restTimer)
+                    if (restTimeSeconds > 0) {
+                        isResting = true
+                        restTimer = restTimeSeconds
+                        viewModel.updateSessionTimers(isResting = true, restRemainingSeconds = restTimer)
+                    }
                 },
                 onAddSet = { weight: Double?, reps: Int?, durationSeconds: Int? ->
                     viewModel.addSet(

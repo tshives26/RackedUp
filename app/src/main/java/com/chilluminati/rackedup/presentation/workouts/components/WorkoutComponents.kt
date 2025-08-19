@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import kotlinx.coroutines.delay
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
@@ -708,10 +710,15 @@ fun SetRow(
             )
 
             // Modern complete toggle button
+            val focusManager = LocalFocusManager.current
+            val keyboard = LocalSoftwareKeyboardController.current
+            
             if (isCompleted) {
                 FilledIconButton(
                     onClick = {
                         onComplete()
+                        focusManager.clearFocus()
+                        keyboard?.hide()
                     },
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -728,7 +735,11 @@ fun SetRow(
                 OutlinedIconButton(
                     onClick = {
                         onComplete()
-                        onStartRest(defaultRestSeconds)
+                        if (defaultRestSeconds > 0) {
+                            onStartRest(defaultRestSeconds)
+                        }
+                        focusManager.clearFocus()
+                        keyboard?.hide()
                     },
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.outlinedIconButtonColors(

@@ -55,14 +55,18 @@ class ProfileViewModel @Inject constructor(
     private fun checkOnboardingStatus() {
         viewModelScope.launch(ioDispatcher) {
             try {
-                val hasCompletedOnboarding = userProfileRepository.hasCompletedOnboarding()
-                println("DEBUG: Onboarding status check - hasCompleted: $hasCompletedOnboarding")
+                // Keep loading state true until we've checked
+                _onboardingState.value = _onboardingState.value.copy(isLoading = true)
+                
+                // Check if we have any profiles at all
+                val profileCount = userProfileRepository.userProfileDao.getProfileCount()
+                val hasCompletedOnboarding = profileCount > 0
+                
                 _onboardingState.value = _onboardingState.value.copy(
                     hasCompletedOnboarding = hasCompletedOnboarding,
                     isLoading = false
                 )
             } catch (e: Exception) {
-                println("DEBUG: Onboarding status check failed: ${e.message}")
                 _onboardingState.value = _onboardingState.value.copy(
                     error = e.message ?: "Failed to check onboarding status",
                     isLoading = false

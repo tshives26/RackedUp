@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -34,11 +35,18 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install splash screen before calling super.onCreate()
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
         
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Create a ViewModel instance
+        val viewModel: ProfileViewModel by viewModels()
+        
+        // Keep the splash screen visible until we've checked onboarding status
+        splashScreen.setKeepOnScreenCondition {
+            viewModel.onboardingState.value.isLoading
+        }
         
         setContent {
             RackedUpAppWithTheme()
@@ -68,7 +76,12 @@ fun RackedUpApp(
 ) {
     val onboardingState by viewModel.onboardingState.collectAsState()
     
-    // Show onboarding if not completed
+    // Show main app flow by default, onboarding only if explicitly needed
+    if (onboardingState.isLoading) {
+        // Keep splash screen visible during loading
+        return
+    }
+    
     if (!onboardingState.hasCompletedOnboarding) {
         OnboardingScreen(
             onOnboardingComplete = {
