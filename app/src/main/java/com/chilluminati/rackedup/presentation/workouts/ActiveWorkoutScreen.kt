@@ -281,11 +281,36 @@ fun ActiveWorkoutScreen(
                 }
             }
 
-            // Workout exercises from ViewModel
-            itemsIndexed(
-                items = activeWorkoutState.workoutExercises,
-                key = { _, ex -> ex.id }
-            ) { _, workoutExercise ->
+            // Loading indicator
+            if (activeWorkoutState.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Loading workout data...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Workout exercises from ViewModel (only show when not loading)
+            if (!activeWorkoutState.isLoading) {
+                itemsIndexed(
+                    items = activeWorkoutState.workoutExercises,
+                    key = { _, ex -> ex.id }
+                ) { _, workoutExercise ->
                 ActiveExerciseCard(
                     workoutExercise = workoutExercise,
                     exerciseSets = activeWorkoutState.exerciseSets[workoutExercise.id] ?: emptyList(),
@@ -333,6 +358,7 @@ fun ActiveWorkoutScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.add_exercise))
                 }
+            }
             }
         }
     }

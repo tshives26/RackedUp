@@ -16,6 +16,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import java.util.Date
 import javax.inject.Inject
 
@@ -154,6 +156,7 @@ class WorkoutsViewModel @Inject constructor(
                         currentWorkout = workout,
                         isActive = true,
                         startTime = Date(),
+                        isLoading = true,
                         // Clear any previous session data to avoid stale totals
                         workoutExercises = emptyList(),
                         exerciseSets = emptyMap(),
@@ -193,6 +196,7 @@ class WorkoutsViewModel @Inject constructor(
                     // This preserves the existing session and timer
                     _activeWorkoutState.value = _activeWorkoutState.value.copy(
                         currentWorkout = workout,
+                        isLoading = true,
                         // Clear maps to ensure fresh load for this workout
                         workoutExercises = emptyList(),
                         exerciseSets = emptyMap(),
@@ -263,24 +267,59 @@ class WorkoutsViewModel @Inject constructor(
      */
     private fun loadWorkoutExercises(workoutId: Long) {
         viewModelScope.launch(ioDispatcher) {
-            workoutRepository.getWorkoutExercises(workoutId).collect { workoutExercises ->
-                _activeWorkoutState.value = _activeWorkoutState.value.copy(
-                    workoutExercises = workoutExercises
-                )
+            try {
+                // Set loading state
+                _activeWorkoutState.value = _activeWorkoutState.value.copy(isLoading = true)
                 
-                // Load sets and exercise details for each exercise
-                workoutExercises.forEach { workoutExercise ->
-                    loadExerciseSets(workoutExercise.id)
-                    
-                    // Load exercise details
-                    exerciseRepository.getExerciseById(workoutExercise.exerciseId)?.let { exercise ->
-                        val currentDetails = _activeWorkoutState.value.exerciseDetails.toMutableMap()
-                        currentDetails[workoutExercise.exerciseId] = exercise
+                workoutRepository.getWorkoutExercises(workoutId).collect { workoutExercises ->
+                    try {
+                        // Load all exercise details first
+                        val exerciseDetails = mutableMapOf<Long, Exercise>()
+                        workoutExercises.forEach { workoutExercise ->
+                            exerciseRepository.getExerciseById(workoutExercise.exerciseId)?.let { exercise ->
+                                exerciseDetails[workoutExercise.exerciseId] = exercise
+                            }
+                        }
+                        
+                        // Load all sets for all exercises concurrently
+                        val exerciseSets = mutableMapOf<Long, List<ExerciseSet>>()
+                        val setLoadingJobs = workoutExercises.map { workoutExercise ->
+                            async {
+                                try {
+                                    val sets = workoutRepository.getExerciseSets(workoutExercise.id).first()
+                                    workoutExercise.id to sets
+                                } catch (e: Exception) {
+                                    // If loading sets fails for an exercise, use empty list
+                                    workoutExercise.id to emptyList<ExerciseSet>()
+                                }
+                            }
+                        }
+                        
+                        // Wait for all sets to load
+                        setLoadingJobs.awaitAll().forEach { (exerciseId, sets) ->
+                            exerciseSets[exerciseId] = sets
+                        }
+                        
+                        // Update state with all data at once
                         _activeWorkoutState.value = _activeWorkoutState.value.copy(
-                            exerciseDetails = currentDetails
+                            workoutExercises = workoutExercises,
+                            exerciseDetails = exerciseDetails,
+                            exerciseSets = exerciseSets,
+                            isLoading = false,
+                            error = null
+                        )
+                    } catch (e: Exception) {
+                        _activeWorkoutState.value = _activeWorkoutState.value.copy(
+                            isLoading = false,
+                            error = e.message ?: "Failed to load workout data"
                         )
                     }
                 }
+            } catch (e: Exception) {
+                _activeWorkoutState.value = _activeWorkoutState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Failed to load workout exercises"
+                )
             }
         }
     }
@@ -305,21 +344,7 @@ class WorkoutsViewModel @Inject constructor(
         }
     }
     
-    /**
-     * Load sets for a workout exercise
-     */
-    private fun loadExerciseSets(workoutExerciseId: Long) {
-        viewModelScope.launch(ioDispatcher) {
-            workoutRepository.getExerciseSets(workoutExerciseId).collect { sets ->
-                val currentSets = _activeWorkoutState.value.exerciseSets.toMutableMap()
-                currentSets[workoutExerciseId] = sets
-                
-                _activeWorkoutState.value = _activeWorkoutState.value.copy(
-                    exerciseSets = currentSets
-                )
-            }
-        }
-    }
+
     
     /**
      * Add exercise to active workout
@@ -502,6 +527,7 @@ data class ActiveWorkoutState(
     val exerciseSets: Map<Long, List<ExerciseSet>> = emptyMap(),
     val exerciseDetails: Map<Long, Exercise> = emptyMap(),
     val isActive: Boolean = false,
+    val isLoading: Boolean = false,
     val startTime: Date? = null,
     val currentExerciseIndex: Int = 0,
     val restTimer: Int = 0, // seconds
