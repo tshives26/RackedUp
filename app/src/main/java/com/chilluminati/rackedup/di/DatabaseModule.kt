@@ -8,6 +8,7 @@ import com.chilluminati.rackedup.data.database.dao.*
 import com.chilluminati.rackedup.data.database.migrations.MIGRATION_1_2
 import com.chilluminati.rackedup.data.database.migrations.MIGRATION_2_3
 import com.chilluminati.rackedup.data.database.migrations.MIGRATION_3_4
+import com.chilluminati.rackedup.data.database.migrations.MIGRATION_4_5
 import com.chilluminati.rackedup.data.repository.UserProfileRepository
 import dagger.Module
 import dagger.Provides
@@ -36,7 +37,8 @@ object DatabaseModule {
             .addMigrations(
                 MIGRATION_1_2,
                 MIGRATION_2_3,
-                MIGRATION_3_4
+                MIGRATION_3_4,
+                MIGRATION_4_5
             )
             .build()
     }

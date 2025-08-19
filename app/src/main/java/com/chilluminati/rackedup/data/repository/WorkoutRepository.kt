@@ -263,7 +263,8 @@ class WorkoutRepository @Inject constructor(
             val workoutExercise = WorkoutExercise(
                 workoutId = workoutId,
                 exerciseId = exerciseId,
-                orderIndex = orderIndex
+                orderIndex = orderIndex,
+                repScheme = programExercise?.reps
             )
             val workoutExerciseId = workoutExerciseDao.insertWorkoutExercise(workoutExercise)
             

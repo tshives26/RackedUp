@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -21,7 +24,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -162,17 +164,9 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    val ime = WindowInsets.ime
-    val density = LocalDensity.current
-    val isKeyboardVisible by remember(ime, density) {
-        derivedStateOf { ime.getBottom(density) > 0 }
-    }
-    
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
-    
-    // Note: Avoid auto-scrolling on keyboard show; it caused jumpiness when focusing inputs
 
     Box(modifier = modifier.fillMaxSize()) {
         // Rest Timer Overlay
@@ -238,13 +232,6 @@ fun ActiveWorkoutScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .windowInsetsPadding(
-                        if (isKeyboardVisible) {
-                            WindowInsets.ime
-                        } else {
-                            WindowInsets(0, 0, 0, 0)
-                        }
-                    )
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
                             focusManager.clearFocus()
@@ -701,15 +688,16 @@ fun ActiveExerciseCard(
             
             // Show all sets
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    exerciseSets.forEach { set ->
+                exerciseSets.forEach { set ->
                     SetRow(
-                            set = set,
-                            setNumber = set.setNumber,
-                            weight = set.weight?.toInt()?.toString() ?: "",
-                            reps = set.reps?.toString() ?: "",
+                        set = set,
+                        setNumber = set.setNumber,
+                        weight = set.weight?.toInt()?.toString() ?: "",
+                        reps = set.reps?.toString() ?: "",
                         isCompleted = set.isCompleted,
                         weightUnit = weightUnit,
                         defaultRestSeconds = defaultRestSeconds,
+
                         onComplete = {
                             onUpdateSet(set.copy(isCompleted = !set.isCompleted))
                         },
@@ -836,6 +824,7 @@ fun SetRow(
     isCompleted: Boolean,
     weightUnit: String,
     defaultRestSeconds: Int,
+    repScheme: String? = null,
     onComplete: () -> Unit,
     onUpdateSet: (String, String) -> Unit,
     onStartRest: (Int) -> Unit,
@@ -846,6 +835,14 @@ fun SetRow(
     var showDeleteMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var countdown by remember { mutableStateOf(5) }
+    
+    // Check if this is an AMRAP/Until Failure exercise
+    val isAmrapOrFailure = repScheme?.let { scheme ->
+        scheme.equals("AMRAP", ignoreCase = true) || 
+        scheme.equals("Till Failure", ignoreCase = true) ||
+        scheme.equals("Until Failure", ignoreCase = true) ||
+        scheme.equals("Failure", ignoreCase = true)
+    } ?: false
     
     val localFocusManager = LocalFocusManager.current
     val weightFocusRequester = remember { FocusRequester() }
@@ -1056,27 +1053,31 @@ fun SetRow(
 
                     // Reps input
                     OutlinedTextField(
-                        value = currentReps,
+                        value = if (isAmrapOrFailure) repScheme ?: "AMRAP" else currentReps,
                         onValueChange = {
-                            // Only allow whole numbers and prevent leading zeros
-                            val filtered = it.filter { char -> char.isDigit() }
-                            val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                                filtered.substring(1)
-                            } else {
-                                filtered
+                            if (!isAmrapOrFailure) {
+                                // Only allow whole numbers and prevent leading zeros
+                                val filtered = it.filter { char -> char.isDigit() }
+                                val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                    filtered.substring(1)
+                                } else {
+                                    filtered
+                                }
+                                currentReps = cleaned
+                                onUpdateSet(currentWeight, cleaned)
                             }
-                            currentReps = cleaned
-                            onUpdateSet(currentWeight, cleaned)
                         },
-                        placeholder = { Text("reps") },
+                        placeholder = { Text(if (isAmrapOrFailure) "AMRAP" else "reps") },
                         suffix = {
-                            // Always show explicit unit to avoid ambiguity
-                            Text(" reps")
+                            // Show appropriate suffix based on exercise type
+                            Text(if (isAmrapOrFailure) "" else " reps")
                         },
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(repsFocusRequester),
                         singleLine = true,
+                        enabled = !isAmrapOrFailure,
+                        readOnly = isAmrapOrFailure,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done

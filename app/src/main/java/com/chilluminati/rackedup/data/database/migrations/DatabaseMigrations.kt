@@ -42,11 +42,12 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Migration from version 4 to 5
+        // Add rep_scheme column to workout_exercises table to preserve AMRAP/Until Failure information
+        database.execSQL("ALTER TABLE workout_exercises ADD COLUMN rep_scheme TEXT")
+    }
+}
+
 // Add future migrations here as needed
-// Example:
-// val MIGRATION_4_5 = object : Migration(4, 5) {
-//     override fun migrate(database: SupportSQLiteDatabase) {
-//         // Add new columns, tables, or modify existing schema
-//         database.execSQL("ALTER TABLE exercises ADD COLUMN new_field TEXT")
-//     }
-// }

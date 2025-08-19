@@ -65,6 +65,9 @@ data class WorkoutExercise(
     @ColumnInfo(name = "target_reps")
     val targetReps: Int? = null,
     
+    @ColumnInfo(name = "rep_scheme")
+    val repScheme: String? = null, // "AMRAP", "Till Failure", "8-12", etc.
+    
     @ColumnInfo(name = "target_weight")
     val targetWeight: Double? = null,
     
