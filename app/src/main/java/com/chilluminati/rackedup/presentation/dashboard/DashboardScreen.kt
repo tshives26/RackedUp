@@ -261,23 +261,15 @@ private fun CurrentProgramSection(
 							.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 12.dp),
 						horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-						Row(
-							modifier = Modifier.fillMaxWidth(),
-							verticalAlignment = Alignment.CenterVertically,
-							horizontalArrangement = Arrangement.Center
-						) {
-                        Icon(
-                            imageVector = Icons.Default.FitnessCenter,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = activeProgram.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+						Text(
+							text = activeProgram.name,
+							style = MaterialTheme.typography.titleMedium,
+							fontWeight = FontWeight.Bold,
+							textAlign = TextAlign.Center,
+							maxLines = 2,
+							softWrap = true,
+							modifier = Modifier.fillMaxWidth()
+						)
 						if (!activeProgram.description.isNullOrBlank()) {
 							Spacer(modifier = Modifier.height(6.dp))
 							Text(

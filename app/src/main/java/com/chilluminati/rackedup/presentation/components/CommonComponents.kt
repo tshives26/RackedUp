@@ -20,6 +20,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 /**
  * Reusable components used across the app
@@ -153,7 +160,10 @@ fun RecentWorkoutCard(
     metaText: String? = null,
     volumeLabel: String? = null,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    showEditOptions: Boolean = false
 ) {
     Card(
         onClick = onClick,
@@ -218,16 +228,76 @@ fun RecentWorkoutCard(
                     }
                 }
                 
-                volumeLabel?.let {
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    volumeLabel?.let {
+                        Column(
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    if (showEditOptions && (onEdit != null || onDelete != null)) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box {
+                            var expanded by remember { mutableStateOf(false) }
+                            
+                            IconButton(
+                                onClick = { expanded = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More options",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                onEdit?.let {
+                                    DropdownMenuItem(
+                                        text = { Text("Edit") },
+                                        leadingIcon = { 
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            expanded = false
+                                            it()
+                                        }
+                                    )
+                                }
+                                onDelete?.let {
+                                    DropdownMenuItem(
+                                        text = { Text("Delete") },
+                                        leadingIcon = { 
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        onClick = {
+                                            expanded = false
+                                            it()
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

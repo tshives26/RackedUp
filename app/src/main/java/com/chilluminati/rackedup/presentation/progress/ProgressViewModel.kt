@@ -303,15 +303,7 @@ class ProgressViewModel @Inject constructor(
         }
     }
     
-    /**
-     * Force refresh all stats
-     */
-    fun refreshAllStats() {
-        viewModelScope.launch {
-            val workouts = workoutRepository.getAllWorkouts().first()
-            refreshStats(workouts)
-        }
-    }
+
 
     private fun calculateWeeklyStats(workouts: List<Workout>): WeeklyStats {
 		// Derive weekEnd from weekStart to avoid locale-dependent issues where
@@ -421,6 +413,39 @@ class ProgressViewModel @Inject constructor(
     
     fun fixWorkoutTotals() {
         fixExistingWorkoutTotals()
+    }
+    
+    /**
+     * Delete a workout and refresh data
+     */
+    fun deleteWorkout(workoutId: Long) {
+        viewModelScope.launch {
+            try {
+                val workout = workoutRepository.getAllWorkouts().first().find { it.id == workoutId }
+                workout?.let {
+                    workoutRepository.deleteWorkout(it)
+                    // Refresh data after deletion
+                    refreshAllStats()
+                }
+            } catch (e: Exception) {
+                // Handle error - in a real app you'd show a snackbar
+                println("Error deleting workout: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Refresh all stats and data
+     */
+    fun refreshAllStats() {
+        viewModelScope.launch {
+            try {
+                val workouts = workoutRepository.getAllWorkouts().first()
+                refreshStats(workouts)
+            } catch (e: Exception) {
+                println("Error refreshing stats: ${e.message}")
+            }
+        }
     }
 
     private suspend fun buildDisplayTitleForWorkout(workout: Workout): String {

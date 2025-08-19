@@ -7,6 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,11 +36,17 @@ fun WorkoutDetailScreen(
     workoutId: Long,
     onNavigateBack: () -> Unit,
     onNavigateToExerciseDetail: (Long) -> Unit,
+    onNavigateToExerciseEdit: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: WorkoutDetailViewModel = hiltViewModel()
+    viewModel: WorkoutDetailViewModel = hiltViewModel(),
+    isEditMode: Boolean = false
 ) {
     val weightUnit by viewModel.weightUnit.collectAsStateWithLifecycle(initialValue = "lbs")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // State for delete confirmation dialog
+    var showDeleteExerciseDialog by remember { mutableStateOf(false) }
+    var exerciseToDelete by remember { mutableStateOf<WorkoutExercise?>(null) }
     
     // Load workout details when screen loads
     LaunchedEffect(workoutId) {
@@ -55,7 +65,7 @@ fun WorkoutDetailScreen(
         TopAppBar(
             title = { 
                 Text(
-                    text = uiState.workout?.name ?: "Workout Details",
+                    text = if (isEditMode) "Edit Workout" else (uiState.workout?.name ?: "Workout Details"),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 ) 
@@ -66,6 +76,21 @@ fun WorkoutDetailScreen(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back)
                     )
+                }
+            },
+            actions = {
+                if (isEditMode) {
+                    IconButton(
+                        onClick = {
+                            // TODO: Save changes
+                            onNavigateBack()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = "Save changes"
+                        )
+                    }
                 }
             }
         )
@@ -110,8 +135,21 @@ fun WorkoutDetailScreen(
                             sets = sets,
                             weightUnit = weightUnit,
                             onClick = { 
-                                exercise?.let { onNavigateToExerciseDetail(it.id) }
-                            }
+                                if (isEditMode) {
+                                    // In edit mode, clicking opens edit options
+                                    // TODO: Navigate to exercise edit screen
+                                } else {
+                                    exercise?.let { onNavigateToExerciseDetail(it.id) }
+                                }
+                            },
+                            onEditExercise = { workoutExercise ->
+                                onNavigateToExerciseEdit(workoutExercise.id)
+                            },
+                            onDeleteExercise = { workoutExercise ->
+                                exerciseToDelete = workoutExercise
+                                showDeleteExerciseDialog = true
+                            },
+                            showEditOptions = isEditMode
                         )
                     }
                 }
@@ -133,6 +171,42 @@ fun WorkoutDetailScreen(
                     )
                 }
             }
+        }
+        
+        // Delete exercise confirmation dialog
+        if (showDeleteExerciseDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteExerciseDialog = false },
+                title = { Text("Delete Exercise") },
+                text = { 
+                    Text(
+                        "Are you sure you want to delete this exercise from the workout? This action cannot be undone."
+                    ) 
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            exerciseToDelete?.let { exercise ->
+                                viewModel.deleteExercise(exercise.id)
+                            }
+                            showDeleteExerciseDialog = false
+                            exerciseToDelete = null
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteExerciseDialog = false
+                            exerciseToDelete = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -205,7 +279,10 @@ private fun ExerciseDetailCard(
     exercise: Exercise?,
     sets: List<ExerciseSet>,
     weightUnit: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditExercise: (WorkoutExercise) -> Unit = {},
+    onDeleteExercise: (WorkoutExercise) -> Unit = {},
+    showEditOptions: Boolean = false
 ) {
     Card(
         onClick = onClick,
@@ -225,11 +302,67 @@ private fun ExerciseDetailCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "${sets.size} sets",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = "${sets.size} sets",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    if (showEditOptions) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box {
+                            var expanded by remember { mutableStateOf(false) }
+                            
+                            IconButton(
+                                onClick = { expanded = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More options",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    leadingIcon = { 
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        onEditExercise(workoutExercise)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete") },
+                                    leadingIcon = { 
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        onDeleteExercise(workoutExercise)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             

@@ -93,6 +93,58 @@ class WorkoutRepository @Inject constructor(
     }
     
     /**
+     * Get exercise sets for a specific workout exercise (one-shot)
+     */
+    suspend fun getExerciseSetsList(workoutExerciseId: Long): List<ExerciseSet> {
+        return withContext(ioDispatcher) {
+            exerciseSetDao.getSetsByWorkoutExerciseId(workoutExerciseId)
+        }
+    }
+    
+    /**
+     * Get workout exercise by ID
+     */
+    suspend fun getWorkoutExerciseById(workoutExerciseId: Long): WorkoutExercise {
+        return withContext(ioDispatcher) {
+            workoutExerciseDao.getWorkoutExerciseById(workoutExerciseId)
+                ?: throw IllegalArgumentException("Workout exercise not found")
+        }
+    }
+    
+    /**
+     * Delete all exercise sets for a workout exercise
+     */
+    suspend fun deleteExerciseSets(workoutExerciseId: Long) {
+        return withContext(ioDispatcher) {
+            val sets = exerciseSetDao.getSetsByWorkoutExerciseId(workoutExerciseId)
+            sets.forEach { exerciseSetDao.deleteExerciseSet(it) }
+        }
+    }
+    
+    /**
+     * Insert a single exercise set
+     */
+    suspend fun insertExerciseSet(exerciseSet: ExerciseSet): Long {
+        return withContext(ioDispatcher) {
+            exerciseSetDao.insertExerciseSet(exerciseSet)
+        }
+    }
+    
+    /**
+     * Delete a workout exercise and all its sets
+     */
+    suspend fun deleteWorkoutExercise(workoutExerciseId: Long) {
+        return withContext(ioDispatcher) {
+            // First delete all sets for this exercise
+            deleteExerciseSets(workoutExerciseId)
+            
+            // Then delete the workout exercise
+            val workoutExercise = workoutExerciseDao.getWorkoutExerciseById(workoutExerciseId)
+            workoutExercise?.let { workoutExerciseDao.deleteWorkoutExercise(it) }
+        }
+    }
+    
+    /**
      * Create a new workout
      */
     suspend fun createWorkout(

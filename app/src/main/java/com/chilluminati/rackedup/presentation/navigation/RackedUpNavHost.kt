@@ -20,6 +20,7 @@ import com.chilluminati.rackedup.presentation.profile.EditProfileScreen
 import com.chilluminati.rackedup.presentation.exercises.ExerciseLibraryScreen
 import com.chilluminati.rackedup.presentation.exercises.ExerciseDetailScreen
 import com.chilluminati.rackedup.presentation.exercises.ExerciseCreateScreen
+import com.chilluminati.rackedup.presentation.workouts.ExerciseEditScreen
 import com.chilluminati.rackedup.presentation.profile.DataManagementScreen
 
 /**
@@ -97,6 +98,9 @@ fun RackedUpNavHost(
                 onNavigateToActiveWorkout = { workoutId ->
                     navController.navigate(RackedUpDestination.ActiveWorkout.createRoute(workoutId))
                 },
+                onNavigateToWorkoutEdit = { workoutId ->
+                    navController.navigate(RackedUpDestination.WorkoutDetail.createRoute(workoutId, edit = true))
+                },
                 initialTab = tab
             )
         }
@@ -134,16 +138,25 @@ fun RackedUpNavHost(
         composable(
             route = RackedUpDestination.WorkoutDetail.route,
             arguments = listOf(
-                navArgument("workoutId") { type = NavType.LongType }
+                navArgument("workoutId") { type = NavType.LongType },
+                navArgument("edit") { 
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
             )
         ) { backStackEntry ->
             val workoutId = backStackEntry.arguments?.getLong("workoutId") ?: 0L
+            val isEditMode = backStackEntry.arguments?.getBoolean("edit") ?: false
             WorkoutDetailScreen(
                 workoutId = workoutId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToExerciseDetail = { exerciseId ->
                     navController.navigate(RackedUpDestination.ExerciseDetail.createRoute(exerciseId))
-                }
+                },
+                onNavigateToExerciseEdit = { workoutExerciseId ->
+                    navController.navigate(RackedUpDestination.ExerciseEdit.createRoute(workoutExerciseId))
+                },
+                isEditMode = isEditMode
             )
         }
 
@@ -156,6 +169,19 @@ fun RackedUpNavHost(
             val exerciseId = backStackEntry.arguments?.getLong("exerciseId") ?: 0L
             ExerciseDetailScreen(
                 exerciseId = exerciseId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = RackedUpDestination.ExerciseEdit.route,
+            arguments = listOf(
+                navArgument("workoutExerciseId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val workoutExerciseId = backStackEntry.arguments?.getLong("workoutExerciseId") ?: 0L
+            ExerciseEditScreen(
+                workoutExerciseId = workoutExerciseId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

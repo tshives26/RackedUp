@@ -47,6 +47,9 @@ import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 fun ProgressScreen(
     onNavigateToWorkoutDetail: (Long) -> Unit,
     onNavigateToActiveWorkout: (Long) -> Unit,
+    onEditWorkout: (Long) -> Unit = {},
+    onDeleteWorkout: (Long) -> Unit = {},
+    onNavigateToWorkoutEdit: (Long) -> Unit = {},
     viewModel: ProgressViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     initialTab: String? = null
@@ -99,6 +102,10 @@ fun ProgressScreen(
     val exerciseVarietyData by viewModel.exerciseVarietyData.collectAsStateWithLifecycle()
     val muscleGroupVarietyData by viewModel.muscleGroupVarietyData.collectAsStateWithLifecycle()
     val volumeBasedPersonalRecords by viewModel.volumeBasedPersonalRecords.collectAsStateWithLifecycle()
+    
+    // State for delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var workoutToDelete by remember { mutableStateOf<Long?>(null) }
 
     GradientBackground(
         modifier = modifier.fillMaxSize()
@@ -163,7 +170,47 @@ fun ProgressScreen(
             3 -> HistoryTab(
                 items = workoutHistoryDisplay,
                 weightUnit = weightUnit,
-                onNavigateToWorkoutDetail = onNavigateToWorkoutDetail
+                onNavigateToWorkoutDetail = onNavigateToWorkoutDetail,
+                onEditWorkout = { workoutId ->
+                    // Navigate to workout detail screen for editing
+                    onNavigateToWorkoutEdit(workoutId)
+                },
+                onDeleteWorkout = { workoutId ->
+                    workoutToDelete = workoutId
+                    showDeleteDialog = true
+                }
+            )
+        }
+        
+        // Delete confirmation dialog
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Workout") },
+                text = { Text("Are you sure you want to delete this workout? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            workoutToDelete?.let { workoutId ->
+                                viewModel.deleteWorkout(workoutId)
+                            }
+                            showDeleteDialog = false
+                            workoutToDelete = null
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            workoutToDelete = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
             )
         }
     }
@@ -555,7 +602,9 @@ private fun BodyProgressTab(
 private fun HistoryTab(
     items: List<WorkoutHistoryDisplay>,
     weightUnit: String,
-    onNavigateToWorkoutDetail: (Long) -> Unit
+    onNavigateToWorkoutDetail: (Long) -> Unit,
+    onEditWorkout: (Long) -> Unit = {},
+    onDeleteWorkout: (Long) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -611,7 +660,10 @@ private fun HistoryTab(
                     date = item.date,
                     metaText = meta,
                     volumeLabel = volumeLabel,
-                    onClick = { onNavigateToWorkoutDetail(item.id) }
+                    onClick = { onNavigateToWorkoutDetail(item.id) },
+                    onEdit = { onEditWorkout(item.id) },
+                    onDelete = { onDeleteWorkout(item.id) },
+                    showEditOptions = true
                 )
             }
         }

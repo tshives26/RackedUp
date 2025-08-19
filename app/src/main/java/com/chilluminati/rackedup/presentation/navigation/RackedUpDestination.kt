@@ -60,12 +60,12 @@ sealed class RackedUpDestination(
 
     // Secondary destinations (not in bottom nav)
     object WorkoutDetail : RackedUpDestination(
-        route = "workout_detail/{workoutId}",
+        route = "workout_detail/{workoutId}?edit={edit}",
         titleRes = R.string.workout_detail,
         selectedIcon = Icons.Filled.FitnessCenter,
         unselectedIcon = Icons.Outlined.FitnessCenter
     ) {
-        fun createRoute(workoutId: Long) = "workout_detail/$workoutId"
+        fun createRoute(workoutId: Long, edit: Boolean = false) = "workout_detail/$workoutId?edit=$edit"
     }
 
     object ExerciseDetail : RackedUpDestination(
@@ -75,6 +75,15 @@ sealed class RackedUpDestination(
         unselectedIcon = Icons.Outlined.Info
     ) {
         fun createRoute(exerciseId: Long) = "exercise_detail/$exerciseId"
+    }
+
+    object ExerciseEdit : RackedUpDestination(
+        route = "exercise_edit/{workoutExerciseId}",
+        titleRes = R.string.exercise_detail,
+        selectedIcon = Icons.Filled.Edit,
+        unselectedIcon = Icons.Outlined.Edit
+    ) {
+        fun createRoute(workoutExerciseId: Long) = "exercise_edit/$workoutExerciseId"
     }
 
     object ActiveWorkout : RackedUpDestination(

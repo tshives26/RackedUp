@@ -116,6 +116,20 @@ class WorkoutDetailViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+    
+    fun deleteExercise(workoutExerciseId: Long) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                workoutRepository.deleteWorkoutExercise(workoutExerciseId)
+                // Reload workout details to reflect changes
+                loadWorkoutDetail(_uiState.value.workout?.id ?: 0L)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to delete exercise"
+                )
+            }
+        }
+    }
 }
 
 /**
