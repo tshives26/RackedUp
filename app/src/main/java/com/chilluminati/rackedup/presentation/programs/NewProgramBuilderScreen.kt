@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -495,9 +497,57 @@ private fun ExerciseRow(
                 IconButton(onClick = onRemove) { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
             }
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = sets, onValueChange = { sets = it; onUpdate(sets, reps, rest) }, label = { Text("Sets") }, modifier = Modifier.weight(1f), colors = AppTextFieldDefaults.outlinedColors())
-                OutlinedTextField(value = reps, onValueChange = { reps = it; onUpdate(sets, reps, rest) }, label = { Text("Reps") }, modifier = Modifier.weight(1f), colors = AppTextFieldDefaults.outlinedColors())
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Till Failure toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Till Failure", style = MaterialTheme.typography.titleSmall)
+                    Switch(
+                        checked = exercise.tillFailure,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                onUpdate(sets, "Till Failure", rest)
+                            } else {
+                                onUpdate(sets, "10", rest)
+                            }
+                        }
+                    )
+                }
+
+                // Sets and Reps inputs
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = sets,
+                        onValueChange = { newValue ->
+                            val filtered = newValue.filter { it.isDigit() }
+                            sets = filtered
+                            onUpdate(filtered, reps, rest)
+                        },
+                        label = { Text("Sets") },
+                        modifier = Modifier.weight(1f),
+                        colors = AppTextFieldDefaults.outlinedColors(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = if (exercise.tillFailure) "Failure" else reps,
+                        onValueChange = { newValue ->
+                            if (!exercise.tillFailure) {
+                                val filtered = newValue.filter { it.isDigit() }
+                                reps = filtered
+                                onUpdate(sets, filtered, rest)
+                            }
+                        },
+                        label = { Text("Reps") },
+                        modifier = Modifier.weight(1f),
+                        colors = AppTextFieldDefaults.outlinedColors(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !exercise.tillFailure,
+                        readOnly = exercise.tillFailure
+                    )
+                }
             }
         }
     }

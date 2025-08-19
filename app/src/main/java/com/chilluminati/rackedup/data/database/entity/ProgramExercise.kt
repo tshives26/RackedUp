@@ -74,6 +74,9 @@ data class ProgramExercise(
     @ColumnInfo(name = "notes")
     val notes: String? = null,
     
+    @ColumnInfo(name = "till_failure")
+    val tillFailure: Boolean = false,
+
     @ColumnInfo(name = "created_at")
     val createdAt: Date = Date()
 )

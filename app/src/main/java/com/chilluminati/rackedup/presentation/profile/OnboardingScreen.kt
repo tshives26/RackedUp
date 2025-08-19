@@ -6,6 +6,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -108,8 +111,17 @@ fun OnboardingScreen(
         }
     }
 
+    val focusManager = LocalFocusManager.current
+
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                focusManager.clearFocus()
+            },
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
@@ -207,19 +219,24 @@ private fun OnboardingForm(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Name Input
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            placeholder = { Text("Enter your name") },
-            leadingIcon = {
-                Icon(Icons.Default.Person, contentDescription = null)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            colors = com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults.outlinedColors()
-        )
+                    var isNameFocused by remember { mutableStateOf(false) }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                placeholder = { Text("Enter your name") },
+                leadingIcon = {
+                    Icon(Icons.Default.Person, contentDescription = null)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        isNameFocused = focusState.isFocused
+                    },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                colors = com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults.outlinedColors()
+            )
 
         // Birthday Selection
         OutlinedCard(
@@ -500,10 +517,6 @@ private fun OnboardingPreferences(
             }
         }
 
-        // Permissions quick grant
-        OutlinedButton(onClick = onRequestAllPermissions, modifier = Modifier.fillMaxWidth()) {
-            Text("Enable app permissions")
-        }
 
         if (showWeightUnitDialog) {
             UnitSelectionDialog(

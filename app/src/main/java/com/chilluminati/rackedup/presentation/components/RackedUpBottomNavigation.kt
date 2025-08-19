@@ -31,20 +31,11 @@ fun RackedUpBottomNavigation(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, MaterialTheme.shapes.medium),
-        color = androidx.compose.ui.graphics.Color.Transparent,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         tonalElevation = 0.dp
     ) {
         NavigationBar(
-            modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                    )
-                ),
+            modifier = Modifier,
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
             tonalElevation = 0.dp
         ) {

@@ -545,7 +545,8 @@ class ProgramsViewModel @Inject constructor(
         val updatedExercise = existingExercises[exerciseIndex].copy(
             sets = sets,
             reps = reps.ifBlank { null },
-            restTimeSeconds = restTimeSeconds
+            restTimeSeconds = restTimeSeconds,
+            tillFailure = reps == "Till Failure"
         )
         
         existingExercises[exerciseIndex] = updatedExercise
