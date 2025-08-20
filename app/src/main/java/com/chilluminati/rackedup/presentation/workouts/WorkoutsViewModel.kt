@@ -344,6 +344,30 @@ class WorkoutsViewModel @Inject constructor(
         }
     }
     
+    /**
+     * Refresh sets for a specific workout exercise
+     */
+    private fun refreshExerciseSets(workoutExerciseId: Long) {
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val updatedSets = workoutRepository.getExerciseSets(workoutExerciseId).first()
+                val currentState = _activeWorkoutState.value
+                val updatedExerciseSets = currentState.exerciseSets.toMutableMap()
+                updatedExerciseSets[workoutExerciseId] = updatedSets
+                
+                _activeWorkoutState.value = currentState.copy(
+                    exerciseSets = updatedExerciseSets
+                )
+            } catch (e: Exception) {
+                // If refresh fails, fall back to full reload
+                val currentWorkout = _activeWorkoutState.value.currentWorkout
+                if (currentWorkout != null) {
+                    loadWorkoutExercises(currentWorkout.id)
+                }
+            }
+        }
+    }
+    
 
     
     /**
@@ -391,6 +415,9 @@ class WorkoutsViewModel @Inject constructor(
                     reps = reps,
                     durationSeconds = durationSeconds
                 )
+                
+                // Refresh only the sets for this specific exercise
+                refreshExerciseSets(workoutExerciseId)
             } catch (e: Exception) {
                 _activeWorkoutState.value = _activeWorkoutState.value.copy(
                     error = e.message ?: "Failed to add set"
@@ -406,6 +433,9 @@ class WorkoutsViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 workoutRepository.updateSet(set)
+                
+                // Refresh only the sets for this specific exercise
+                refreshExerciseSets(set.workoutExerciseId)
             } catch (e: Exception) {
                 _activeWorkoutState.value = _activeWorkoutState.value.copy(
                     error = e.message ?: "Failed to update set"
@@ -421,6 +451,9 @@ class WorkoutsViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             try {
                 workoutRepository.deleteSet(set)
+                
+                // Refresh only the sets for this specific exercise
+                refreshExerciseSets(set.workoutExerciseId)
             } catch (e: Exception) {
                 _activeWorkoutState.value = _activeWorkoutState.value.copy(
                     error = e.message ?: "Failed to delete set"
