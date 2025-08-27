@@ -271,6 +271,13 @@ class ProgramsViewModel @Inject constructor(
      * Start creating a new custom program
      */
     fun startNewProgram() {
+        val initialDay = ProgramDay(
+            id = nextTempDayId--,
+            programId = 0,
+            name = "Day 1",
+            dayNumber = 1,
+            weekNumber = 1
+        )
         _builderState.value = ProgramBuilderState(
             isCreating = true,
             programName = "",
@@ -278,8 +285,8 @@ class ProgramsViewModel @Inject constructor(
             difficultyLevel = "Beginner",
             programType = "",
             durationWeeks = 8,
-            durationEnabled = true,
-            programDays = emptyList()
+            durationEnabled = false,
+            programDays = listOf(initialDay)
         )
     }
     
@@ -336,74 +343,58 @@ class ProgramsViewModel @Inject constructor(
         )
     }
 
-    /**
-     * Replace or align program days with provided names, preserving existing days and their
-     * exercises when possible. Adds/removes days as needed. Avoids duplicating days
-     * when the user revisits the schedule step.
-     */
-    fun setProgramDays(dayNames: List<String>) {
-        Log.d("ProgramsViewModel", "setProgramDays: names=${dayNames.joinToString()} size=${dayNames.size}")
-        val currentState = _builderState.value
-        val currentDays = currentState.programDays.toMutableList()
-        Log.d("ProgramsViewModel", "setProgramDays: currentDays=${currentDays.map { it.name }.joinToString()}")
-        val updatedDays = mutableListOf<ProgramDay>()
-        val updatedExercises = currentState.programExercises.toMutableMap()
+         /**
+      * Replace or align program days with provided names, preserving existing days and their
+      * exercises when possible. Adds/removes days as needed. Avoids duplicating days
+      * when the user revisits the schedule step.
+      */
+     fun setProgramDays(dayNames: List<String>) {
+         Log.d("ProgramsViewModel", "setProgramDays: names=${dayNames.joinToString()} size=${dayNames.size}")
+         val currentState = _builderState.value
+         val currentDays = currentState.programDays.toMutableList()
+         Log.d("ProgramsViewModel", "setProgramDays: currentDays=${currentDays.map { it.name }.joinToString()}")
+         val updatedDays = mutableListOf<ProgramDay>()
+         val updatedExercises = currentState.programExercises.toMutableMap()
 
-        // Enforce bounds
-        if (dayNames.isEmpty() && currentDays.isEmpty()) {
-            // Ensure at least a single day exists
-            val initial = ProgramDay(
-                id = nextTempDayId--,
-                programId = 0,
-                name = "Day 1",
-                dayNumber = 1,
-                weekNumber = 1
-            )
-            _builderState.value = currentState.copy(
-                programDays = listOf(initial),
-                programExercises = updatedExercises
-            )
-            return
-        }
+         // Enforce bounds and ensure at least one day exists
+         val clampedSize = dayNames.size.coerceIn(MIN_DAYS, MAX_DAYS)
+         val effectiveNames = if (dayNames.isEmpty()) listOf("Day 1") else dayNames.take(clampedSize)
 
-        val clampedSize = dayNames.size.coerceIn(MIN_DAYS, MAX_DAYS)
-        val effectiveNames = if (dayNames.isEmpty()) listOf("Day 1") else dayNames.take(clampedSize)
+         // Update or create up to effectiveNames.size
+         for (i in effectiveNames.indices) {
+             val name = effectiveNames[i]
+             if (i < currentDays.size) {
+                 // Keep existing day ID to preserve exercises
+                 val existing = currentDays[i]
+                 updatedDays.add(existing.copy(name = name, dayNumber = i + 1))
+             } else {
+                 // Add new day with unique temp ID
+                 val newDay = ProgramDay(
+                     id = nextTempDayId--,
+                     programId = 0,
+                     name = name,
+                     dayNumber = i + 1,
+                     weekNumber = 1
+                 )
+                 updatedDays.add(newDay)
+             }
+         }
 
-        // Update or create up to effectiveNames.size
-        for (i in effectiveNames.indices) {
-            val name = effectiveNames[i]
-            if (i < currentDays.size) {
-                // Keep existing day ID to preserve exercises
-                val existing = currentDays[i]
-                updatedDays.add(existing.copy(name = name, dayNumber = i + 1))
-            } else {
-                // Add new day with unique temp ID
-                val newDay = ProgramDay(
-                    id = nextTempDayId--,
-                    programId = 0,
-                    name = name,
-                    dayNumber = i + 1,
-                    weekNumber = 1
-                )
-                updatedDays.add(newDay)
-            }
-        }
+         // Remove extra days (and their exercises) if any
+         if (currentDays.size > effectiveNames.size) {
+             val toRemove = currentDays.drop(effectiveNames.size)
+             toRemove.forEach { day ->
+                 updatedExercises.remove(day.id)
+             }
+         }
 
-        // Remove extra days (and their exercises) if any
-        if (currentDays.size > effectiveNames.size) {
-            val toRemove = currentDays.drop(effectiveNames.size)
-            toRemove.forEach { day ->
-                updatedExercises.remove(day.id)
-            }
-        }
-
-        _builderState.value = currentState.copy(
-            programDays = updatedDays,
-            programExercises = updatedExercises
-        )
-        Log.d("ProgramsViewModel", "setProgramDays: applied days=${updatedDays.size}")
-        Log.d("ProgramsViewModel", "setProgramDays: final days=${updatedDays.map { it.name }.joinToString()}")
-    }
+         _builderState.value = currentState.copy(
+             programDays = updatedDays,
+             programExercises = updatedExercises
+         )
+         Log.d("ProgramsViewModel", "setProgramDays: applied days=${updatedDays.size}")
+         Log.d("ProgramsViewModel", "setProgramDays: final days=${updatedDays.map { it.name }.joinToString()}")
+     }
     
     /**
      * Remove day from program builder
@@ -573,6 +564,22 @@ class ProgramsViewModel @Inject constructor(
     }
     
     /**
+     * Validate program builder state and return error message if invalid
+     */
+    private fun validateProgramBuilder(state: ProgramBuilderState): String? {
+        return when {
+            state.programName.isBlank() -> "Program name is required"
+            state.programType.isBlank() -> "Please select a program type"
+            state.programDays.isEmpty() -> "At least one training day is required"
+            state.programDays.any { it.name.isBlank() } -> "All training days must have names"
+            state.programDays.all { it.isRestDay } -> "At least one training day must have exercises"
+            state.programDays.any { !it.isRestDay && state.programExercises[it.id].orEmpty().isEmpty() } -> 
+                "All non-rest days must have at least one exercise"
+            else -> null
+        }
+    }
+
+    /**
      * Save the program being built
      */
     fun saveProgramBuilder() {
@@ -589,10 +596,10 @@ class ProgramsViewModel @Inject constructor(
                     "saveProgramBuilder: day names=${builderState.programDays.map { it.name }.joinToString()}"
                 )
                 
-                if (builderState.programName.isBlank()) {
-                    _builderState.value = builderState.copy(
-                        error = "Program name is required"
-                    )
+                // Validate required fields
+                val validationError = validateProgramBuilder(builderState)
+                if (validationError != null) {
+                    _builderState.value = builderState.copy(error = validationError)
                     return@launch
                 }
                 
@@ -658,6 +665,13 @@ class ProgramsViewModel @Inject constructor(
         val snapshot = _builderState.value
         viewModelScope.launch(ioDispatcher) {
             try {
+                // Validate required fields
+                val validationError = validateProgramBuilder(snapshot)
+                if (validationError != null) {
+                    _builderState.value = snapshot.copy(error = validationError)
+                    return@launch
+                }
+                
                 val programId = programRepository.createProgram(
                     name = snapshot.programName.ifBlank { "Program" },
                     description = snapshot.programDescription,
@@ -840,7 +854,7 @@ class ProgramsViewModel @Inject constructor(
             difficultyLevel = template.difficultyLevel,
             programType = template.programType,
             durationWeeks = template.durationWeeks,
-            durationEnabled = true,
+            durationEnabled = false,
             programDays = days,
             programExercises = map,
             editingProgramId = null
@@ -1041,7 +1055,7 @@ data class ProgramBuilderState(
     val difficultyLevel: String = "Beginner",
     val programType: String = "",
     val durationWeeks: Int = 8,
-    val durationEnabled: Boolean = true,
+    val durationEnabled: Boolean = false,
     val programDays: List<ProgramDay> = emptyList(),
     val programExercises: Map<Long, List<ProgramExercise>> = emptyMap(),
     // If not null, we're editing an existing program and should update/replace instead of creating

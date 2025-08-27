@@ -13,6 +13,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
 import androidx.compose.ui.platform.LocalDensity
@@ -42,9 +47,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.MenuAnchorType
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.chilluminati.rackedup.presentation.components.FullScreenImageDialog
-import com.chilluminati.rackedup.data.database.entity.Exercise
-import com.chilluminati.rackedup.data.database.entity.ProgramExercise
+ import com.chilluminati.rackedup.presentation.components.FullScreenImageDialog
+ import com.chilluminati.rackedup.data.database.entity.Exercise
+ import com.chilluminati.rackedup.data.database.entity.ProgramExercise
+ import android.util.Log
 
 @Composable
 fun NewProgramBuilderScreen(
@@ -55,26 +61,29 @@ fun NewProgramBuilderScreen(
     val availableExercises by viewModel.availableExercises.collectAsState()
     val exerciseCategories by viewModel.exerciseCategories.collectAsState()
 
-    // initialize baseline days if empty
-    LaunchedEffect(state.programDays, state.programType, state.isCreating) {
-        if (state.isCreating && state.programDays.isEmpty()) {
-            val defaults = generateDayNamesLocal(3, state.programType)
-            viewModel.setProgramDays(defaults)
+    // Clear error when user starts typing or making changes
+    LaunchedEffect(state.programName, state.programType, state.programDays, state.programExercises) {
+        if (state.error != null) {
+            viewModel.clearError()
         }
     }
+
+         
 
     var showExercisePickerForDay by remember { mutableStateOf<Int?>(null) }
     var previewExerciseId by remember { mutableStateOf<Long?>(null) }
     var showExitConfirmation by remember { mutableStateOf(false) }
 
-    // Check if user has entered any meaningful data
-    val hasUserData = remember(state) {
-        state.programName.isNotBlank() ||
-        state.programDescription.isNotBlank() ||
-        state.programType.isNotBlank() ||
-        state.programDays.any { it.name.isNotBlank() && it.name != "Day 1" && it.name != "Day 2" && it.name != "Day 3" } ||
-        state.programExercises.values.any { it.isNotEmpty() }
-    }
+         // Check if user has entered any meaningful data
+     val hasUserData = remember(state) {
+         state.programName.isNotBlank() ||
+         state.programDescription.isNotBlank() ||
+         state.programType.isNotBlank() ||
+         state.durationEnabled ||
+         state.programDays.any { it.name.isNotBlank() && it.name != "Day 1" } ||
+         state.programExercises.values.any { it.isNotEmpty() } ||
+         state.difficultyLevel != "Beginner" // Check if difficulty was changed from default
+     }
 
     // Handle back navigation
     val handleBackNavigation = {
@@ -85,8 +94,19 @@ fun NewProgramBuilderScreen(
         }
     }
 
+    val mainInteractionSource = remember { MutableInteractionSource() }
+    val focusManager = LocalFocusManager.current
+    
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = mainInteractionSource,
+                indication = null
+            ) {
+                // Clear focus when clicking outside of fields
+                focusManager.clearFocus()
+            }
     ) {
         // Compact title bar
         Surface(
@@ -120,6 +140,50 @@ fun NewProgramBuilderScreen(
                     Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Save")
+                }
+            }
+        }
+
+        // Error banner
+        if (state.error != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Error,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = state.error!!,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { viewModel.clearError() },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Dismiss error",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
@@ -160,11 +224,12 @@ fun NewProgramBuilderScreen(
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it; viewModel.updateProgramInfo(name, description, state.difficultyLevel, state.programType, state.durationWeeks, state.durationEnabled) },
-                            label = { Text("Program Name") },
+                            label = { Text("Program Name *") },
                             singleLine = true,
                             leadingIcon = { Icon(Icons.Filled.Title, contentDescription = null) },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = AppTextFieldDefaults.outlinedColors()
+                            colors = AppTextFieldDefaults.outlinedColors(),
+                            isError = state.error?.contains("Program name") == true && name.isBlank()
                         )
                         ExpandableDescriptionField(
                             value = description,
@@ -192,7 +257,8 @@ fun NewProgramBuilderScreen(
                             selected = state.programType,
                             onChange = { type ->
                                 viewModel.updateProgramInfo(name, description, state.difficultyLevel, type, state.durationWeeks, state.durationEnabled)
-                            }
+                            },
+                            isError = state.error?.contains("program type") == true && state.programType.isBlank()
                         )
 
                         // Duration controls
@@ -228,22 +294,36 @@ fun NewProgramBuilderScreen(
                             Text("$weeks weeks", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         }
 
-                        // Quick summary chips
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            AssistChip(onClick = {}, label = { Text(state.difficultyLevel) })
-                            AssistChip(onClick = {}, label = { Text(state.programType) })
-                            if (state.durationEnabled) AssistChip(onClick = {}, label = { Text("${state.durationWeeks}w") })
-                        }
+                                                 // Quick summary chips
+                         Row(
+                             modifier = Modifier.fillMaxWidth(),
+                             horizontalArrangement = Arrangement.spacedBy(8.dp)
+                         ) {
+                             AssistChip(onClick = {}, label = { Text(state.difficultyLevel) })
+                             if (state.programType.isNotBlank()) {
+                                 AssistChip(onClick = {}, label = { Text(state.programType) })
+                             }
+                             if (state.durationEnabled) AssistChip(onClick = {}, label = { Text("${state.durationWeeks}w") })
+                         }
                     }
                 }
             }
 
             // Training days header + controls
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                val headerInteractionSource = remember { MutableInteractionSource() }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = headerInteractionSource,
+                            indication = null
+                        ) {
+                            focusManager.clearFocus()
+                        },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text("Training Days", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         val canAddDay = state.programDays.size < 7
@@ -260,9 +340,21 @@ fun NewProgramBuilderScreen(
                 }
             }
 
-            // Days list
-            itemsIndexed(state.programDays) { dayIndex, day ->
-                Card {
+                         // Days list
+             itemsIndexed(state.programDays) { dayIndex, day ->
+                val dayExercises = state.programExercises[day.id].orEmpty()
+                val needsExercises = !day.isRestDay && dayExercises.isEmpty()
+                val hasError = state.error?.contains("exercises") == true && needsExercises
+                
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (hasError) {
+                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        }
+                    )
+                ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             var dayName by remember(day.id) { mutableStateOf(day.name) }
@@ -272,9 +364,10 @@ fun NewProgramBuilderScreen(
                                     val names = state.programDays.mapIndexed { i, d -> if (i == dayIndex) dayName else d.name }
                                     viewModel.setProgramDays(names)
                                 },
-                                label = { Text("Day ${dayIndex + 1}") },
+                                label = { Text("Day ${dayIndex + 1} *") },
                                 modifier = Modifier.weight(1f),
-                                colors = AppTextFieldDefaults.outlinedColors()
+                                colors = AppTextFieldDefaults.outlinedColors(),
+                                isError = state.error?.contains("names") == true && dayName.isBlank()
                             )
                             Spacer(Modifier.width(8.dp))
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -304,9 +397,25 @@ fun NewProgramBuilderScreen(
                         if (day.isRestDay) {
                             Text("This is a rest day.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            val dayExercises = state.programExercises[day.id].orEmpty()
                             if (dayExercises.isEmpty()) {
-                                Text("No exercises added yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (hasError) {
+                                        Icon(
+                                            Icons.Filled.Error,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    }
+                                    Text(
+                                        "No exercises added yet",
+                                        color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             } else {
                                 dayExercises.forEachIndexed { exIndex, ex ->
                                     ExerciseRow(
@@ -456,11 +565,11 @@ private fun DifficultyChips(selected: String, onSelect: (String) -> Unit) {
 }
 
 @Composable
-private fun ProgramTypeDropdown(selected: String, onChange: (String) -> Unit) {
+private fun ProgramTypeDropdown(selected: String, onChange: (String) -> Unit, isError: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     val choices = listOf("Full Body", "Upper/Lower", "Push/Pull/Legs", "Powerlifting", "Bodybuilding", "Custom")
     Column {
-        Text("Type", style = MaterialTheme.typography.titleSmall)
+        Text("Type *", style = MaterialTheme.typography.titleSmall)
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
             OutlinedTextField(
                 readOnly = true,
@@ -469,7 +578,16 @@ private fun ProgramTypeDropdown(selected: String, onChange: (String) -> Unit) {
                 placeholder = { Text("Choose one") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                isError = isError,
+                colors = if (isError) {
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.error,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    OutlinedTextFieldDefaults.colors()
+                }
             )
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 choices.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { expanded = false; onChange(value) }) }
