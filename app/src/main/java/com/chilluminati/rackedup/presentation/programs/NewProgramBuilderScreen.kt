@@ -276,7 +276,10 @@ fun NewProgramBuilderScreen(
                                 checked = state.durationEnabled,
                                 onCheckedChange = { enabled ->
                                     viewModel.updateDurationEnabled(enabled)
-                                    viewModel.updateProgramInfo(name, description, state.difficultyLevel, state.programType, state.durationWeeks, enabled)
+                                    // Only call updateProgramInfo if we're disabling duration or if we need to update other fields
+                                    if (!enabled) {
+                                        viewModel.updateProgramInfo(name, description, state.difficultyLevel, state.programType, 0, enabled)
+                                    }
                                 }
                             )
                         }

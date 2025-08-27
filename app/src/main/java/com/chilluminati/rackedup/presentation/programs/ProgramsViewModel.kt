@@ -319,8 +319,11 @@ class ProgramsViewModel @Inject constructor(
      * Update duration enabled state
      */
     fun updateDurationEnabled(enabled: Boolean) {
-        _builderState.value = _builderState.value.copy(
-            durationEnabled = enabled
+        val currentState = _builderState.value
+        val newDurationWeeks = if (enabled && currentState.durationWeeks == 0) 8 else currentState.durationWeeks
+        _builderState.value = currentState.copy(
+            durationEnabled = enabled,
+            durationWeeks = newDurationWeeks
         )
     }
     
