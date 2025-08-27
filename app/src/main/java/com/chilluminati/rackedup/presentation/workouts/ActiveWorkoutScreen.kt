@@ -167,6 +167,9 @@ fun ActiveWorkoutScreen(
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+    
+    // Finish confirmation state
+    var showFinishConfirmation by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         // Draggable Rest Timer Overlay
@@ -193,44 +196,56 @@ fun ActiveWorkoutScreen(
             )
         }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                TopAppBar(
-                    title = { Text("Active Workout") },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
-                    },
-                    actions = {
-                        TextButton(
-                            onClick = {
-                                // Finish the workout first, then navigate
-                                viewModel.finishWorkout()
-                                onWorkoutComplete()
-                            },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text(
-                                text = "Finish",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Compact title bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
-                )
+                    
+                    Text(
+                        text = "Active Workout",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    TextButton(
+                        onClick = {
+                            showFinishConfirmation = true
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(
+                            text = "Finish",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
-        ) { innerPadding ->
+
+            // Main content
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
                     .pointerInput(Unit) {
                         detectTapGestures(onTap = {
                             focusManager.clearFocus()
@@ -241,6 +256,7 @@ fun ActiveWorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 state = listState
             ) {
+
                 // Workout Timer Header
                 item {
                     WorkoutTimerCard(
@@ -359,6 +375,37 @@ fun ActiveWorkoutScreen(
                 }
             }
             }
+        }
+        
+        // Finish confirmation dialog
+        if (showFinishConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showFinishConfirmation = false },
+                title = { Text("Finish Workout?") },
+                text = { Text("Are you sure you want to finish this workout? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            // Finish the workout first, then navigate
+                            viewModel.finishWorkout()
+                            onWorkoutComplete()
+                            showFinishConfirmation = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Finish Workout")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showFinishConfirmation = false }
+                    ) {
+                        Text("Continue Workout")
+                    }
+                }
+            )
         }
     }
 }

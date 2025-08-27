@@ -38,6 +38,7 @@ import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.presentation.workouts.ActiveWorkoutState
+import com.chilluminati.rackedup.presentation.programs.ExercisePreviewSheet
 import kotlin.math.roundToInt
 
 @Composable
@@ -572,6 +573,15 @@ fun ActiveExerciseCard(
                         Text("Cancel")
                     }
                 }
+            )
+        }
+        
+        // Exercise preview sheet
+        val preview = previewExercise
+        if (preview != null) {
+            ExercisePreviewSheet(
+                exercise = preview,
+                onDismiss = { previewExercise = null }
             )
         }
     }
