@@ -50,6 +50,7 @@ fun ProgressScreen(
     onEditWorkout: (Long) -> Unit = {},
     onDeleteWorkout: (Long) -> Unit = {},
     onNavigateToWorkoutEdit: (Long) -> Unit = {},
+    onNavigateToPRs: (() -> Unit)? = null,
     viewModel: ProgressViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     initialTab: String? = null
@@ -69,6 +70,11 @@ fun ProgressScreen(
         }
     }
 
+    // Create a callback to switch to PRs tab internally
+    val switchToPRsTab = remember {
+        { selectedTab = 2 }
+    }
+
     // Handle workout completion events
     val workoutsViewModel: WorkoutsViewModel = hiltViewModel()
     LaunchedEffect(Unit) {
@@ -78,16 +84,10 @@ fun ProgressScreen(
         }
     }
     
-    // Refresh PR data when the screen becomes active (in case user navigates here after workout completion)
-    LaunchedEffect(Unit) {
-        viewModel.refreshPersonalRecords()
-    }
-    
     val volumeData by viewModel.volumeData.collectAsStateWithLifecycle()
     val strengthData by viewModel.strengthData.collectAsStateWithLifecycle()
     val measurementData by viewModel.measurementData.collectAsStateWithLifecycle()
     val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val workoutHistoryDisplay by viewModel.workoutHistoryDisplay.collectAsStateWithLifecycle()
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
     val monthlyStats by viewModel.monthlyStats.collectAsStateWithLifecycle()
@@ -121,7 +121,6 @@ fun ProgressScreen(
             volumeData = volumeData,
             strengthData = strengthData,
             personalRecords = personalRecords,
-            isLoading = isLoading,
             weightUnit = weightUnit,
             weeklyStats = weeklyStats,
             currentStreak = currentStreak,
@@ -148,7 +147,6 @@ fun ProgressScreen(
                 volumeData = volumeData,
                 strengthData = strengthData,
                 personalRecords = personalRecords,
-                isLoading = isLoading,
                 weightUnit = weightUnit,
                 weeklyStats = weeklyStats,
                 monthlyStats = monthlyStats,
@@ -161,15 +159,15 @@ fun ProgressScreen(
                 weeklyProgressData = weeklyProgressData,
                 exerciseVarietyData = exerciseVarietyData,
                 muscleGroupVarietyData = muscleGroupVarietyData,
-                volumeBasedPersonalRecords = volumeBasedPersonalRecords
+                volumeBasedPersonalRecords = volumeBasedPersonalRecords,
+                onNavigateToPRs = onNavigateToPRs,
+                switchToPRsTab = switchToPRsTab
             )
             1 -> BodyProgressTab(
-                measurementData = measurementData,
-                isLoading = isLoading
+                measurementData = measurementData
             )
             2 -> PersonalRecordsTab(
                 volumeBasedPersonalRecords = volumeBasedPersonalRecords,
-                isLoading = isLoading,
                 weightUnit = weightUnit
             )
             3 -> HistoryTab(
@@ -227,7 +225,6 @@ private fun ProgressHeader(
     volumeData: List<Pair<Date, Double>>,
     strengthData: List<Pair<Date, Map<String, Double>>>,
     personalRecords: List<com.chilluminati.rackedup.data.database.entity.PersonalRecord>,
-    isLoading: Boolean,
     weightUnit: String,
     weeklyStats: WeeklyStats,
     currentStreak: Int,
@@ -257,27 +254,7 @@ private fun ProgressHeader(
             )
             Spacer(modifier = Modifier.height(8.dp))
             
-            if (isLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    repeat(4) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Loading...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            } else if (!hasData) {
+            if (!hasData) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -343,7 +320,6 @@ private fun OverviewTab(
     volumeData: List<Pair<Date, Double>>,
     strengthData: List<Pair<Date, Map<String, Double>>>,
     personalRecords: List<com.chilluminati.rackedup.data.database.entity.PersonalRecord>,
-    isLoading: Boolean,
     weightUnit: String,
     weeklyStats: WeeklyStats,
     monthlyStats: MonthlyStats,
@@ -356,7 +332,9 @@ private fun OverviewTab(
     weeklyProgressData: List<Pair<Date, Double>>,
     exerciseVarietyData: List<Pair<Date, Int>>,
     muscleGroupVarietyData: List<Pair<Date, Int>>,
-    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
+    onNavigateToPRs: (() -> Unit)? = null,
+    switchToPRsTab: () -> Unit
 ) {
     val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty() || 
                   universalStrengthData.isNotEmpty() || volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty() ||
@@ -378,7 +356,7 @@ private fun OverviewTab(
             )
         }
 
-        if (!hasData && !isLoading) {
+        if (!hasData) {
             item {
                 FeaturePlaceholderCard(
                     title = "No Progress Data",
@@ -429,7 +407,7 @@ private fun OverviewTab(
             )
         }
 
-        if (!hasData && !isLoading) {
+        if (!hasData) {
             item {
                 FeaturePlaceholderCard(
                     title = "Charts Coming Soon",
@@ -491,7 +469,8 @@ private fun OverviewTab(
                 personalRecords = volumeBasedPersonalRecords,
                 modifier = Modifier,
                 title = "Volume Personal Records",
-                weightUnit = weightUnit
+                weightUnit = weightUnit,
+                onNavigateToPRs = switchToPRsTab
             )
         }
     }
@@ -502,7 +481,6 @@ private fun OverviewTab(
 @Composable
 private fun PersonalRecordsTab(
     volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
-    isLoading: Boolean,
     weightUnit: String
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -552,7 +530,7 @@ private fun PersonalRecordsTab(
             )
         }
 
-        if (volumeBasedPersonalRecords.isEmpty() && !isLoading) {
+        if (volumeBasedPersonalRecords.isEmpty()) {
             item {
                 FeaturePlaceholderCard(
                     title = "No Personal Records Yet",
@@ -597,8 +575,7 @@ private fun PersonalRecordsTab(
 
 @Composable
 private fun BodyProgressTab(
-    measurementData: List<Pair<Date, Map<String, Double>>>,
-    isLoading: Boolean
+    measurementData: List<Pair<Date, Map<String, Double>>>
 ) {
     BodyMeasurementScreen()
 }

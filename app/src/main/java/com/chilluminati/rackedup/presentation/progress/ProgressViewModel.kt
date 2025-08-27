@@ -107,8 +107,6 @@ class ProgressViewModel @Inject constructor(
 
     private fun loadProgressData() {
         viewModelScope.launch {
-            _isLoading.value = true
-
             try {
                 // Load volume data using available method
                 val volumePoints = progressRepository.getWorkoutVolumeOverTime(30).first()
@@ -189,8 +187,6 @@ class ProgressViewModel @Inject constructor(
             } catch (e: Exception) {
                 // Handle any errors during data loading
                 // For now, just log the error and continue with empty data
-            } finally {
-                _isLoading.value = false
             }
         }
     }

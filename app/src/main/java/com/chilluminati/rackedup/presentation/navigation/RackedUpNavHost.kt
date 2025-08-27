@@ -101,6 +101,10 @@ fun RackedUpNavHost(
                 onNavigateToWorkoutEdit = { workoutId ->
                     navController.navigate(RackedUpDestination.WorkoutDetail.createRoute(workoutId, edit = true))
                 },
+                onNavigateToPRs = {
+                    // Instead of navigating, we'll handle tab switching internally in ProgressScreen
+                    // This prevents the screen from being recreated and causing UI flashing
+                },
                 initialTab = tab
             )
         }

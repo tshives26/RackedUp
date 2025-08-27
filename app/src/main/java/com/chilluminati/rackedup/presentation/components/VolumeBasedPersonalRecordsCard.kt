@@ -20,7 +20,8 @@ fun VolumeBasedPersonalRecordsCard(
     personalRecords: List<VolumeBasedPersonalRecord>,
     modifier: Modifier = Modifier,
     title: String = "Personal Records",
-    weightUnit: String = "kg"
+    weightUnit: String = "kg",
+    onNavigateToPRs: (() -> Unit)? = null
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     var showAllRecordsDialog by remember { mutableStateOf(false) }
@@ -82,7 +83,13 @@ fun VolumeBasedPersonalRecordsCard(
                             records = records,
                             dateFormat = dateFormat,
                             weightUnit = weightUnit,
-                            onShowMore = { showAllRecordsDialog = true }
+                            onShowMore = { 
+                                if (onNavigateToPRs != null) {
+                                    onNavigateToPRs()
+                                } else {
+                                    showAllRecordsDialog = true
+                                }
+                            }
                         )
                     }
                 }
@@ -90,7 +97,7 @@ fun VolumeBasedPersonalRecordsCard(
         }
     }
     
-    // Show all records dialog
+    // Show all records dialog (fallback when navigation is not available)
     if (showAllRecordsDialog) {
         AllRecordsDialog(
             personalRecords = personalRecords,
