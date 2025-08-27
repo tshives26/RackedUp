@@ -410,13 +410,14 @@ fun AchievementsDialog(
                                     Text(text = category.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                                 }
                             }
-                            items(list) { st ->
-                                AchievementListItem(
-                                    title = st.definition.title,
-                                    description = st.definition.description,
-                                    isUnlocked = st.isUnlocked
-                                )
-                            }
+                                                         items(list) { st ->
+                                 AchievementListItem(
+                                     title = st.definition.title,
+                                     description = st.definition.description,
+                                     isUnlocked = st.isUnlocked,
+                                     unlockedAt = st.unlockedAt
+                                 )
+                             }
                         }
                     }
                 }
@@ -429,7 +430,8 @@ fun AchievementsDialog(
 private fun AchievementListItem(
     title: String,
     description: String,
-    isUnlocked: Boolean
+    isUnlocked: Boolean,
+    unlockedAt: java.util.Date?
 ) {
     val alpha = if (isUnlocked) 1f else 0.55f
     Row(
@@ -470,6 +472,13 @@ private fun AchievementListItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (isUnlocked && unlockedAt != null) {
+                Text(
+                    text = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(unlockedAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
         }
         if (isUnlocked) {
             Icon(
@@ -510,6 +519,7 @@ private fun categoryIcon(category: com.chilluminati.rackedup.data.repository.Ach
     com.chilluminati.rackedup.data.repository.AchievementsRepository.Category.Strength -> Icons.Default.Whatshot
     com.chilluminati.rackedup.data.repository.AchievementsRepository.Category.TimeOfDay -> Icons.Default.NightsStay
     com.chilluminati.rackedup.data.repository.AchievementsRepository.Category.Programs -> Icons.AutoMirrored.Filled.List
+    com.chilluminati.rackedup.data.repository.AchievementsRepository.Category.AdvancedTracking -> Icons.Default.Analytics
 }
 
 @Composable

@@ -23,6 +23,16 @@ interface BodyMeasurementDao {
 
     @Delete
     suspend fun deleteBodyMeasurement(bodyMeasurement: BodyMeasurement)
+
+    // Achievement-related queries
+    @Query("SELECT COUNT(*) FROM body_measurements")
+    suspend fun getBodyMeasurementCount(): Int
+
+    @Query("SELECT measured_at FROM body_measurements ORDER BY measured_at ASC LIMIT 1")
+    suspend fun getFirstMeasurementDate(): java.util.Date?
+
+    @Query("SELECT measured_at FROM body_measurements ORDER BY measured_at ASC LIMIT 1 OFFSET :n-1")
+    suspend fun getNthMeasurementDate(n: Int): java.util.Date?
 }
 
 

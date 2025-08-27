@@ -63,4 +63,14 @@ interface ExerciseDao {
     
     @Query("UPDATE exercises SET is_favorite = :isFavorite WHERE id = :exerciseId")
     suspend fun updateFavoriteStatus(exerciseId: Long, isFavorite: Boolean)
+
+    // Achievement-related queries
+    @Query("SELECT COUNT(DISTINCT e.id) FROM exercises e INNER JOIN workout_exercises we ON e.id = we.exercise_id")
+    suspend fun getUniqueExerciseCount(): Int
+
+    @Query("SELECT DISTINCT e.muscle_groups FROM exercises e INNER JOIN workout_exercises we ON e.id = we.exercise_id")
+    suspend fun getUniqueMuscleGroups(): List<String>
+
+    @Query("SELECT DISTINCT e.equipment FROM exercises e INNER JOIN workout_exercises we ON e.id = we.exercise_id")
+    suspend fun getUniqueEquipmentTypes(): List<String>
 }
