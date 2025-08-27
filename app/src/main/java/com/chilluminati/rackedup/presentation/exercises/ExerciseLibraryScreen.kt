@@ -207,12 +207,22 @@ fun ExerciseLibraryScreen(
             }
 
             // Exercise List
+            val favoritesOnly by viewModel.showFavoritesOnly.collectAsStateWithLifecycle()
+            val isDefaultFilters =
+                searchQuery.isBlank() &&
+                selectedCategory == "All" &&
+                !favoritesOnly &&
+                equipment == "All" &&
+                mechanic == "All" &&
+                primary == "All" &&
+                force == "All"
             ExerciseList(
                 exercises = uiState.exercises,
                 isLoading = uiState.isLoading,
                 onExerciseCardClick = onNavigateToExerciseDetail,
                 onAddExercise = if (isSelectionMode && onExerciseSelected != null) onExerciseSelected else null,
                 isSelectionMode = isSelectionMode,
+                showReloadHint = isDefaultFilters,
                 modifier = Modifier
                     .weight(1f)
             )
@@ -260,6 +270,7 @@ private fun ExerciseList(
     onExerciseCardClick: (Long) -> Unit,
     onAddExercise: ((Long) -> Unit)? = null,
     isSelectionMode: Boolean = false,
+    showReloadHint: Boolean = false,
     modifier: Modifier = Modifier
 ) {
 
@@ -278,11 +289,19 @@ private fun ExerciseList(
             }
         } else if (exercises.isEmpty()) {
             item {
-                EmptyStateCard(
-                    title = stringResource(R.string.no_exercises_found),
-                    description = "No exercises available. Try adjusting your search or category filter.",
-                    icon = Icons.Default.SearchOff
-                )
+                if (showReloadHint) {
+                    EmptyStateCard(
+                        title = "No exercises loaded",
+                        description = "Please reload the app to see the full exercise list.",
+                        icon = Icons.Default.Refresh
+                    )
+                } else {
+                    EmptyStateCard(
+                        title = stringResource(R.string.no_exercises_found),
+                        description = "No exercises available. Try adjusting your search or category filter.",
+                        icon = Icons.Default.SearchOff
+                    )
+                }
             }
         } else {
             items(
