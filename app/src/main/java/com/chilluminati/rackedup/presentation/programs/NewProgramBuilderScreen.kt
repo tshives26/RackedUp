@@ -68,6 +68,13 @@ fun NewProgramBuilderScreen(
         }
     }
 
+    // Initialize with one day if program days is empty
+    LaunchedEffect(Unit) {
+        if (state.programDays.isEmpty()) {
+            viewModel.startNewProgram()
+        }
+    }
+
          
 
     var showExercisePickerForDay by remember { mutableStateOf<Int?>(null) }
