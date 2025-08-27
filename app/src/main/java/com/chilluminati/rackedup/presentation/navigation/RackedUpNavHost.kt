@@ -22,6 +22,7 @@ import com.chilluminati.rackedup.presentation.exercises.ExerciseDetailScreen
 import com.chilluminati.rackedup.presentation.exercises.ExerciseCreateScreen
 import com.chilluminati.rackedup.presentation.workouts.ExerciseEditScreen
 import com.chilluminati.rackedup.presentation.profile.DataManagementScreen
+import com.chilluminati.rackedup.presentation.programs.NewProgramBuilderScreen
 
 /**
  * Main navigation host for the RackedUp app
@@ -120,6 +121,23 @@ fun RackedUpNavHost(
                 },
                 onNavigateToSelectProgramDay = { programId ->
                     navController.navigate(RackedUpDestination.SelectProgramDay.createRoute(programId))
+                },
+                onNavigateToProgramBuilder = {
+                    navController.navigate(RackedUpDestination.ProgramBuilder.route)
+                }
+            )
+        }
+
+        composable(RackedUpDestination.ProgramBuilder.route) {
+            NewProgramBuilderScreen(
+                onNavigateBack = { 
+                    // Navigate to dashboard instead of popping back to avoid state issues
+                    navController.navigate(RackedUpDestination.Dashboard.route) {
+                        // Clear the back stack so user can't navigate back to the builder
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }

@@ -154,6 +154,13 @@ sealed class RackedUpDestination(
         unselectedIcon = Icons.Outlined.Edit
     )
 
+    object ProgramBuilder : RackedUpDestination(
+        route = "program_builder",
+        titleRes = R.string.programs,
+        selectedIcon = Icons.Filled.Add,
+        unselectedIcon = Icons.Outlined.Add
+    )
+
     companion object {
         // Bottom navigation destinations
         val bottomNavDestinations = listOf(

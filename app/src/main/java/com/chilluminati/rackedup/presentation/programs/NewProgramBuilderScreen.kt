@@ -56,40 +56,78 @@ fun NewProgramBuilderScreen(
     val exerciseCategories by viewModel.exerciseCategories.collectAsState()
 
     // initialize baseline days if empty
-    LaunchedEffect(state.programDays, state.programType) {
-        if (state.programDays.isEmpty()) {
+    LaunchedEffect(state.programDays, state.programType, state.isCreating) {
+        if (state.isCreating && state.programDays.isEmpty()) {
             val defaults = generateDayNamesLocal(3, state.programType)
             viewModel.setProgramDays(defaults)
         }
     }
 
     var showExercisePickerForDay by remember { mutableStateOf<Int?>(null) }
-
     var previewExerciseId by remember { mutableStateOf<Long?>(null) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Program Builder", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                actions = {
-                    TextButton(onClick = { viewModel.saveProgramBuilder() }) {
-                        Icon(Icons.Filled.Save, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Save")
-                    }
-                }
-            )
+    // Check if user has entered any meaningful data
+    val hasUserData = remember(state) {
+        state.programName.isNotBlank() ||
+        state.programDescription.isNotBlank() ||
+        state.programType.isNotBlank() ||
+        state.programDays.any { it.name.isNotBlank() && it.name != "Day 1" && it.name != "Day 2" && it.name != "Day 3" } ||
+        state.programExercises.values.any { it.isNotEmpty() }
+    }
+
+    // Handle back navigation
+    val handleBackNavigation = {
+        if (hasUserData) {
+            showExitConfirmation = true
+        } else {
+            onNavigateBack()
         }
-    ) { padding ->
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Compact title bar
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = handleBackNavigation) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                
+                Text(
+                    text = "Program Builder",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Button(
+                    onClick = { viewModel.saveProgramBuilder() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Save")
+                }
+            }
+        }
+
+        // Main content
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -293,7 +331,7 @@ fun NewProgramBuilderScreen(
                 }
             }
 
-            // Save buttons
+            // Bottom save buttons
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(onClick = { viewModel.saveProgramBuilder() }, modifier = Modifier.weight(1f)) {
@@ -307,6 +345,32 @@ fun NewProgramBuilderScreen(
                 }
             }
         }
+    }
+
+    // Exit confirmation dialog
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("Discard Program?") },
+            text = { Text("You have unsaved changes. Are you sure you want to discard this program?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onNavigateBack()
+                        showExitConfirmation = false
+                    }
+                ) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExitConfirmation = false }
+                ) {
+                    Text("Continue Editing")
+                }
+            }
+        )
     }
 
     if (showExercisePickerForDay != null) {

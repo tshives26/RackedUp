@@ -37,6 +37,7 @@ import com.chilluminati.rackedup.presentation.components.BouncyButton
 fun ProgramsScreen(
     onNavigateToActiveWorkout: (Long?) -> Unit,
     onNavigateToSelectProgramDay: (Long) -> Unit = {},
+    onNavigateToProgramBuilder: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
@@ -44,13 +45,10 @@ fun ProgramsScreen(
     val tabs = remember { listOf("My Programs", "Templates", "Builder") }
     val builderState by viewModel.builderState.collectAsStateWithLifecycle()
 
-    // Auto-switch to builder tab when creating a new program
+    // Auto-navigate to builder when creating a new program
     LaunchedEffect(builderState.isCreating) {
         if (builderState.isCreating) {
-            selectedTab = 2 // Switch to Builder tab
-        } else if (selectedTab == 2) {
-            // If we're on the builder tab and not creating, switch back to first tab
-            selectedTab = 0
+            onNavigateToProgramBuilder()
         }
     }
 
@@ -63,24 +61,21 @@ fun ProgramsScreen(
                 ProgramsHeader(onCreateProgram = { viewModel.startNewProgram() })
             }
 
-        // Tab layout (hidden while actively building a program)
-        if (!(selectedTab == 2 && builderState.isCreating)) {
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        text = { Text(title) },
-                        selected = selectedTab == index,
-                        onClick = {
-                            if (index == 2) {
-                                // Open builder directly in Create New Program mode
-                                viewModel.startNewProgram()
-                                selectedTab = 2
-                            } else {
-                                selectedTab = index
-                            }
+        // Tab layout
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    text = { Text(title) },
+                    selected = selectedTab == index,
+                    onClick = {
+                        if (index == 2) {
+                            // Open builder directly in Create New Program mode
+                            viewModel.startNewProgram()
+                        } else {
+                            selectedTab = index
                         }
-                    )
-                }
+                    }
+                )
             }
         }
 
