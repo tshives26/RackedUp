@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -21,11 +22,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.derivedStateOf
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.presentation.workouts.ActiveWorkoutState
+import kotlin.math.roundToInt
 
 @Composable
 fun WorkoutTimerCard(
@@ -84,57 +97,127 @@ fun WorkoutTimerCard(
 }
 
 @Composable
-fun RestTimerCard(
+fun DraggableRestTimerCard(
     restTimer: Int,
     onTimerComplete: () -> Unit,
-    onAddTime: (Int) -> Unit = {}
+    onAddTime: (Int) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (restTimer <= 10) 
-                MaterialTheme.colorScheme.errorContainer 
-            else 
-                MaterialTheme.colorScheme.secondaryContainer
-        )
+    var isAtTop by remember { mutableStateOf(true) }
+    var cardHeight by remember { mutableStateOf(0) }
+    var screenHeight by remember { mutableStateOf(0) }
+    var isDragging by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    
+    // Calculate positions
+    val topPosition = with(density) { 64.dp.toPx() } // TopAppBar height
+    val bottomPosition = remember {
+        derivedStateOf {
+            val screenHeightPx = with(density) { screenHeight.dp.toPx() }
+            val bottomPadding = with(density) { 120.dp.toPx() } // Account for navigation bar + safe area
+            screenHeightPx - cardHeight.toFloat() - bottomPadding
+        }
+    }
+    
+    // Animate between top and bottom positions
+    val animatedOffsetY by animateFloatAsState(
+        targetValue = if (isAtTop) topPosition else bottomPosition.value,
+        animationSpec = tween(durationMillis = 400, easing = androidx.compose.animation.core.EaseInOutCubic),
+        label = "offsetY"
+    )
+    
+    // Get screen height and set initial position
+    LaunchedEffect(configuration) {
+        screenHeight = configuration.screenHeightDp
+    }
+    
+    Box(
+        modifier = modifier
+            .offset { IntOffset(0, animatedOffsetY.roundToInt()) }
+            .onSizeChanged { cardHeight = it.height }
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = {
+                        isDragging = true
+                    },
+                    onDragEnd = {
+                        isDragging = false
+                        // Toggle position when drag ends
+                        isAtTop = !isAtTop
+                    }
+                ) { _, _ ->
+                    // Just track drag state, position will be toggled on drag end
+                }
+            }
+            .zIndex(2f) // Ensure it's above other content
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (restTimer <= 10) 
+                    MaterialTheme.colorScheme.errorContainer 
+                else 
+                    MaterialTheme.colorScheme.secondaryContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Text(
-                text = "Rest Timer",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (restTimer <= 10) 
-                    MaterialTheme.colorScheme.onErrorContainer 
-                else 
-                    MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${restTimer / 60}:${String.format("%02d", restTimer % 60)}",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (restTimer <= 10) 
-                    MaterialTheme.colorScheme.onErrorContainer 
-                else 
-                    MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(onClick = { onAddTime(30) }) {
-                    Text("Add 30s")
+                // Minimal drag indicator - just a subtle line
+                Surface(
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = if (isDragging) 0.4f else 0.2f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(3.dp)
+                            .padding(vertical = 2.dp)
+                    )
                 }
-                TextButton(onClick = { onAddTime(60) }) {
-                    Text("Add 1m")
-                }
-                TextButton(onClick = onTimerComplete) {
-                    Text("Skip")
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Timer display
+                Text(
+                    text = "${restTimer / 60}:${String.format("%02d", restTimer % 60)}",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (restTimer <= 10) 
+                        MaterialTheme.colorScheme.onErrorContainer 
+                    else 
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Action buttons with larger text
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = { onAddTime(30) },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("+30s", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    TextButton(
+                        onClick = { onAddTime(60) },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("+1m", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    TextButton(
+                        onClick = onTimerComplete,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("Skip", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }

@@ -169,7 +169,7 @@ fun ActiveWorkoutScreen(
     val keyboard = LocalSoftwareKeyboardController.current
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Rest Timer Overlay
+        // Draggable Rest Timer Overlay
         AnimatedVisibility(
             visible = isResting,
             enter = slideInVertically() + fadeIn(),
@@ -177,11 +177,10 @@ fun ActiveWorkoutScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .padding(top = 64.dp) // Height of TopAppBar + some spacing
                 .padding(horizontal = 16.dp)
-                .zIndex(1f)
+                .zIndex(2f) // Higher z-index to ensure it's above other content
         ) {
-            RestTimerCard(
+            DraggableRestTimerCard(
                 restTimer = restTimer,
                 onTimerComplete = {
                     isResting = false
@@ -420,63 +419,7 @@ fun WorkoutTimerCard(
     }
 }
 
-@Composable
-fun RestTimerCard(
-    restTimer: Int,
-    onTimerComplete: () -> Unit,
-    onAddTime: (Int) -> Unit = {}
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (restTimer <= 10) 
-                MaterialTheme.colorScheme.errorContainer 
-            else 
-                MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Rest Timer",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (restTimer <= 10) 
-                    MaterialTheme.colorScheme.onErrorContainer 
-                else 
-                    MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${restTimer / 60}:${String.format("%02d", restTimer % 60)}",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (restTimer <= 10) 
-                    MaterialTheme.colorScheme.onErrorContainer 
-                else 
-                    MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextButton(onClick = { onAddTime(30) }) {
-                    Text("Add 30s")
-                }
-                TextButton(onClick = { onAddTime(60) }) {
-                    Text("Add 1m")
-                }
-                TextButton(onClick = onTimerComplete) {
-                    Text("Skip")
-                }
-            }
-        }
-    }
-}
+
 
 @Composable
 fun CurrentWorkoutSummary(
