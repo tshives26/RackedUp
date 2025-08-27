@@ -803,7 +803,14 @@ private fun FullScreenExercisePickerRevamp(
         selectedPrimary
     ) {
         exercises.filter { ex ->
-            val matchesSearch = search.isBlank() || ex.name.contains(search, ignoreCase = true)
+            val matchesSearch = if (search.isBlank()) {
+                true
+            } else {
+                val searchWords = search.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }
+                searchWords.all { word ->
+                    ex.name.contains(word, ignoreCase = true)
+                }
+            }
             val matchesCategory = selectedCategory == "All" || ex.category.equals(selectedCategory, ignoreCase = true)
             val matchesEquipment = selectedEquipment == "All" || ex.equipment.equals(selectedEquipment, ignoreCase = true)
             val matchesMechanic = selectedMechanic == "All" || (ex.mechanic?.equals(selectedMechanic, ignoreCase = true) == true)

@@ -154,9 +154,15 @@ class ExerciseLibraryViewModel @Inject constructor(
         force: String
     ): List<Exercise> {
         return exercises.filter { exercise ->
-            val matchesSearch = query.isEmpty() || 
-                exercise.name.contains(query, ignoreCase = true) ||
-                exercise.muscleGroups.any { it.contains(query, ignoreCase = true) }
+            val matchesSearch = if (query.isEmpty()) {
+                true
+            } else {
+                val searchWords = query.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }
+                searchWords.all { word ->
+                    exercise.name.contains(word, ignoreCase = true) ||
+                    exercise.muscleGroups.any { it.contains(word, ignoreCase = true) }
+                }
+            }
             
             val matchesCategory = category == "All" || exercise.category.equals(category, ignoreCase = true)
             val matchesFavorite = !favoritesOnly || exercise.isFavorite
