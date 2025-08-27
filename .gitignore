@@ -109,6 +109,10 @@ Thumbs.db
 *.swo
 *~
 
+# IntelliJ IDEA / Android Studio
+.idea/
+!.idea/.gitignore
+
 # Build backup folder
 app/build_backup/
 
