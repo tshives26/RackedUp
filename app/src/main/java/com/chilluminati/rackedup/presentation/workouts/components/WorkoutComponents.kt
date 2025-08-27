@@ -148,7 +148,7 @@ fun CurrentWorkoutSummary(
 ) {
     val totalSets = activeWorkoutState.exerciseSets.values.sumOf { it.size }
     val totalVolume = activeWorkoutState.exerciseSets.values.flatten()
-        .filter { it.isCompleted }
+        .filter { it.isCompleted && it.weight != null && it.weight > 0 }
         .sumOf { set ->
             val weight = set.weight ?: 0.0
             val reps = set.reps ?: 0
@@ -339,8 +339,8 @@ fun ActiveExerciseCard(
                         
                         // Volume chip
                         val volume = exerciseSets.sumOf { set ->
-                            if (set.isCompleted) {
-                                (set.weight ?: 0.0) * (set.reps ?: 0)
+                            if (set.isCompleted && set.weight != null && set.weight > 0) {
+                                set.weight * (set.reps ?: 0)
                             } else 0.0
                         }
                         Surface(
@@ -390,8 +390,8 @@ fun ActiveExerciseCard(
                         },
                         onUpdateSet = { weight, reps ->
                             onUpdateSet(set.copy(
-                                weight = weight.toDoubleOrNull(),
-                                reps = reps.toIntOrNull()
+                                weight = if (weight.isBlank()) null else weight.toDoubleOrNull(),
+                                reps = if (reps.isBlank()) null else reps.toIntOrNull()
                             ))
                         },
                         onStartRest = onStartRest,
@@ -509,7 +509,17 @@ fun SetRow(
     onStartRest: (Int) -> Unit,
     onDeleteSet: (ExerciseSet) -> Unit
 ) {
-    var currentWeight by remember(weight) { mutableStateOf(if (weight.isBlank()) "0" else weight) }
+    // Determine if weight is actually entered or just placeholder
+    val hasActualWeight = set.weight != null && set.weight > 0
+    var currentWeight by remember(weight) { 
+        mutableStateOf(
+            when {
+                hasActualWeight -> weight
+                weight == "0" -> ""
+                else -> weight
+            }
+        ) 
+    }
     var currentReps by remember(reps) { mutableStateOf(reps) }
     var showDeleteMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -665,7 +675,9 @@ fun SetRow(
                         filtered
                     }
                     currentWeight = cleaned
-                    onUpdateSet(cleaned, currentReps)
+                    // Pass empty string if no weight entered, otherwise pass the cleaned value
+                    val weightToSave = if (cleaned.isBlank()) "" else cleaned
+                    onUpdateSet(weightToSave, currentReps)
                 },
                 placeholder = { Text("0") },
                 suffix = { Text(" $weightUnit") },
@@ -715,7 +727,9 @@ fun SetRow(
                                 filtered
                             }
                             currentReps = cleaned
-                            onUpdateSet(currentWeight, cleaned)
+                            // Pass empty string if no reps entered, otherwise pass the cleaned value
+                            val repsToSave = if (cleaned.isBlank()) "" else cleaned
+                            onUpdateSet(currentWeight, repsToSave)
                         },
                         placeholder = { Text("reps") },
                         suffix = { Text(" reps") },

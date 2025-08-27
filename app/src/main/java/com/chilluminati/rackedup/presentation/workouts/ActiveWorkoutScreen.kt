@@ -485,7 +485,7 @@ fun CurrentWorkoutSummary(
 ) {
     val totalSets = activeWorkoutState.exerciseSets.values.sumOf { it.size }
     val totalVolume = activeWorkoutState.exerciseSets.values.flatten()
-        .filter { it.isCompleted }
+        .filter { it.isCompleted && it.weight != null && it.weight > 0 }
         .sumOf { set ->
             val weight = set.weight ?: 0.0
             val reps = set.reps ?: 0
@@ -703,8 +703,8 @@ fun ActiveExerciseCard(
                         
                         // Volume chip
                         val volume = exerciseSets.sumOf { set ->
-                            if (set.isCompleted) {
-                                (set.weight ?: 0.0) * (set.reps ?: 0)
+                            if (set.isCompleted && set.weight != null && set.weight > 0) {
+                                set.weight * (set.reps ?: 0)
                             } else 0.0
                         }
                         Surface(
@@ -756,8 +756,8 @@ fun ActiveExerciseCard(
                         },
                         onUpdateSet = { weight, reps ->
                             onUpdateSet(set.copy(
-                                weight = weight.toDoubleOrNull(),
-                                reps = reps.toIntOrNull()
+                                weight = if (weight.isBlank()) null else weight.toDoubleOrNull(),
+                                reps = if (reps.isBlank()) null else reps.toIntOrNull()
                             ))
                         },
                         onStartRest = onStartRest,

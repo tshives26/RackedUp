@@ -18,6 +18,32 @@ interface PersonalRecordDao {
     @Query("SELECT * FROM personal_records")
     fun getAllPersonalRecordsFlow(): Flow<List<PersonalRecord>>
 
+    /**
+     * Get the best volume personal record for each exercise (highest volume per exercise)
+     * This query ensures only one record per exercise by selecting the most recent record
+     * when multiple records have the same volume
+     */
+    @Query("""
+        SELECT pr.* FROM personal_records pr
+        INNER JOIN (
+            SELECT exercise_id, MAX(volume) as max_volume
+            FROM personal_records 
+            WHERE record_type = 'Volume' AND volume IS NOT NULL
+            GROUP BY exercise_id
+        ) max_volumes ON pr.exercise_id = max_volumes.exercise_id 
+        AND pr.volume = max_volumes.max_volume
+        WHERE pr.record_type = 'Volume'
+        AND pr.id = (
+            SELECT MAX(id) 
+            FROM personal_records pr2 
+            WHERE pr2.exercise_id = pr.exercise_id 
+            AND pr2.volume = max_volumes.max_volume
+            AND pr2.record_type = 'Volume'
+        )
+        ORDER BY pr.volume DESC
+    """)
+    suspend fun getBestVolumePersonalRecords(): List<PersonalRecord>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPersonalRecord(personalRecord: PersonalRecord): Long
 
@@ -29,6 +55,33 @@ interface PersonalRecordDao {
 
     @Delete
     suspend fun deletePersonalRecord(personalRecord: PersonalRecord)
+
+    /**
+     * Clean up duplicate volume personal records, keeping only the best one per exercise
+     */
+    @Query("""
+        DELETE FROM personal_records 
+        WHERE record_type = 'Volume' 
+        AND id NOT IN (
+            SELECT pr.id FROM personal_records pr
+            INNER JOIN (
+                SELECT exercise_id, MAX(volume) as max_volume
+                FROM personal_records 
+                WHERE record_type = 'Volume' AND volume IS NOT NULL
+                GROUP BY exercise_id
+            ) max_volumes ON pr.exercise_id = max_volumes.exercise_id 
+            AND pr.volume = max_volumes.max_volume
+            WHERE pr.record_type = 'Volume'
+            AND pr.id = (
+                SELECT MAX(id) 
+                FROM personal_records pr2 
+                WHERE pr2.exercise_id = pr.exercise_id 
+                AND pr2.volume = max_volumes.max_volume
+                AND pr2.record_type = 'Volume'
+            )
+        )
+    """)
+    suspend fun cleanupDuplicateVolumeRecords()
 }
 
 

@@ -100,6 +100,8 @@ class ProgressViewModel @Inject constructor(
         observeAchievements()
         // Initialize PRs from historical data if needed
         initializePRsFromHistory()
+        // Clean up any duplicate volume records
+        cleanupDuplicateVolumeRecords()
         observeAggregateStats()
     }
 
@@ -296,6 +298,20 @@ class ProgressViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 progressRepository.initializeVolumePRsFromHistory()
+            } catch (e: Exception) {
+                // Log error but don't crash the app
+                e.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Clean up duplicate volume personal records
+     */
+    private fun cleanupDuplicateVolumeRecords() {
+        viewModelScope.launch {
+            try {
+                progressRepository.cleanupDuplicateVolumeRecords()
             } catch (e: Exception) {
                 // Log error but don't crash the app
                 e.printStackTrace()

@@ -104,9 +104,8 @@ class ProgressRepository @Inject constructor(
      */
     suspend fun getVolumeBasedPersonalRecords(): List<VolumeBasedPersonalRecord> {
         return withContext(ioDispatcher) {
-            // Get stored volume-based personal records
-            val personalRecords = personalRecordDao.getAllPersonalRecords()
-                .filter { it.recordType == "Volume" }
+            // Get only the best volume personal record for each exercise
+            val personalRecords = personalRecordDao.getBestVolumePersonalRecords()
             
             val exercises = exerciseDao.getAllExercisesList()
             val exerciseMap = exercises.associateBy { it.id }
@@ -126,7 +125,7 @@ class ProgressRepository @Inject constructor(
                         achievedAt = pr.achievedAt
                     )
                 } else null
-            }.sortedByDescending { it.volume }
+            }
         }
     }
     
@@ -136,6 +135,16 @@ class ProgressRepository @Inject constructor(
     suspend fun getVolumeBasedPersonalRecordsByCategory(): Map<String, List<VolumeBasedPersonalRecord>> {
         val records = getVolumeBasedPersonalRecords()
         return records.groupBy { record -> record.exerciseCategory }
+    }
+
+    /**
+     * Clean up duplicate volume personal records in the database
+     * This should be called once to fix existing duplicate data
+     */
+    suspend fun cleanupDuplicateVolumeRecords() {
+        withContext(ioDispatcher) {
+            personalRecordDao.cleanupDuplicateVolumeRecords()
+        }
     }
     
     /**

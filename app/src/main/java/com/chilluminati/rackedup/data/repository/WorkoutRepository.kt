@@ -205,8 +205,8 @@ class WorkoutRepository @Inject constructor(
                 allWorkoutExercises.forEach { we ->
                     val sets = exerciseSetDao.getExerciseSets(we.id).first()
                     sets.forEach { s ->
-                        if (s.isCompleted) {
-                            val weight = s.weight ?: 0.0
+                        if (s.isCompleted && s.weight != null && s.weight > 0) {
+                            val weight = s.weight
                             val reps = s.reps ?: 0
                             totalVolume += weight * reps
                             totalSets++
@@ -273,6 +273,9 @@ class WorkoutRepository @Inject constructor(
             )
             val workoutExerciseId = workoutExerciseDao.insertWorkoutExercise(workoutExercise)
             
+            // Get historical data for this exercise to pre-populate weights
+            val historicalSets = getLastCompletedSetsForExercise(exerciseId, 10)
+            
             // If this is from a program exercise, create the initial sets
             if (programExercise != null) {
                 // Parse sets format (e.g., "3x8-12" or "5x5")
@@ -281,15 +284,26 @@ class WorkoutRepository @Inject constructor(
                 // Create sets with target reps and previous weights if available
                 repeat(setsCount) { setNumber ->
                     val lastSet = lastSets.getOrNull(setNumber)
+                    val historicalSet = historicalSets.getOrNull(setNumber)
                     val exerciseSet = ExerciseSet(
                         workoutExerciseId = workoutExerciseId,
                         setNumber = setNumber + 1,
                         reps = programExercise.reps?.split("-")?.firstOrNull()?.toIntOrNull(),
-                        weight = lastSet?.weight,
+                        weight = lastSet?.weight ?: historicalSet?.weight,
                         restTimeSeconds = programExercise.restTimeSeconds
                     )
                     exerciseSetDao.insertExerciseSet(exerciseSet)
                 }
+            } else {
+                // For manually added exercises, create a single empty set
+                val lastWeight = getLastWeightForExercise(exerciseId)
+                val exerciseSet = ExerciseSet(
+                    workoutExerciseId = workoutExerciseId,
+                    setNumber = 1,
+                    weight = lastWeight,
+                    reps = null
+                )
+                exerciseSetDao.insertExerciseSet(exerciseSet)
             }
             
             workoutExerciseId
@@ -341,8 +355,8 @@ class WorkoutRepository @Inject constructor(
                 allWorkoutExercises.forEach { we ->
                     val sets = exerciseSetDao.getExerciseSets(we.id).first()
                     sets.forEach { s ->
-                        if (s.isCompleted) {
-                            val weight = s.weight ?: 0.0
+                        if (s.isCompleted && s.weight != null && s.weight > 0) {
+                            val weight = s.weight
                             val reps = s.reps ?: 0
                             totalVolume += weight * reps
                             totalSets++
@@ -388,8 +402,8 @@ class WorkoutRepository @Inject constructor(
                 allWorkoutExercises.forEach { we ->
                     val sets = exerciseSetDao.getExerciseSets(we.id).first()
                     sets.forEach { s ->
-                        if (s.isCompleted) {
-                            val weight = s.weight ?: 0.0
+                        if (s.isCompleted && s.weight != null && s.weight > 0) {
+                            val weight = s.weight
                             val reps = s.reps ?: 0
                             totalVolume += weight * reps
                             totalSets++
@@ -418,6 +432,24 @@ class WorkoutRepository @Inject constructor(
     }
     
     /**
+     * Get last completed sets for an exercise (for pre-populating weights)
+     */
+    suspend fun getLastCompletedSetsForExercise(exerciseId: Long, limit: Int = 10): List<ExerciseSet> {
+        return withContext(ioDispatcher) {
+            exerciseSetDao.getLastCompletedSetsForExercise(exerciseId, limit)
+        }
+    }
+    
+    /**
+     * Get last weight used for an exercise
+     */
+    suspend fun getLastWeightForExercise(exerciseId: Long): Double? {
+        return withContext(ioDispatcher) {
+            exerciseSetDao.getLastWeightForExercise(exerciseId)
+        }
+    }
+    
+    /**
      * Calculate workout statistics
      */
     suspend fun calculateWorkoutStats(workoutId: Long): WorkoutStats {
@@ -432,8 +464,8 @@ class WorkoutRepository @Inject constructor(
             allWorkoutExercises.forEach { we ->
                 val sets = exerciseSetDao.getExerciseSets(we.id).first()
                 sets.forEach { s ->
-                    if (s.isCompleted) {
-                        val weight = s.weight ?: 0.0
+                    if (s.isCompleted && s.weight != null && s.weight > 0) {
+                        val weight = s.weight
                         val reps = s.reps ?: 0
                         totalVolume += weight * reps
                         totalSets++
