@@ -4,12 +4,15 @@ import com.chilluminati.rackedup.data.database.dao.PersonalRecordDao
 import com.chilluminati.rackedup.data.database.dao.ProgramDao
 import com.chilluminati.rackedup.data.database.dao.WorkoutDao
 import com.chilluminati.rackedup.data.database.dao.WorkoutExerciseDao
+import com.chilluminati.rackedup.data.database.dao.ExerciseSetDao
 import com.chilluminati.rackedup.data.database.dao.ExerciseDao
 import com.chilluminati.rackedup.data.database.dao.BodyMeasurementDao
 import com.chilluminati.rackedup.data.database.dao.UserProfileDao
 import com.chilluminati.rackedup.data.database.entity.Workout
 import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.data.database.entity.BodyMeasurement
+import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
+import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +34,7 @@ class AchievementsRepository @Inject constructor(
     private val personalRecordDao: PersonalRecordDao,
     private val programDao: ProgramDao,
     private val workoutExerciseDao: WorkoutExerciseDao,
+    private val exerciseSetDao: ExerciseSetDao,
     private val exerciseDao: ExerciseDao,
     private val bodyMeasurementDao: BodyMeasurementDao,
     private val userProfileDao: UserProfileDao,
@@ -60,9 +64,11 @@ class AchievementsRepository @Inject constructor(
             personalRecordDao.getAllPersonalRecordsFlow(),
             programDao.getAllPrograms(),
             exerciseDao.getAllExercises(),
-            bodyMeasurementDao.getBodyMeasurements("weight") // Use weight as default type
-        ) { workouts, prs, programs, exercises, bodyMeasurements ->
-            computeStates(workouts, prs.map { it.achievedAt }, programs, exercises, bodyMeasurements)
+            bodyMeasurementDao.getBodyMeasurements("weight"), // Use weight as default type
+            workoutExerciseDao.getAllWorkoutExercisesFlow(),
+            exerciseSetDao.getAllExerciseSetsFlow()
+        ) { workouts, prs, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets ->
+            computeStates(workouts, prs.map { it.achievedAt }, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets)
         }
     }
 
@@ -71,9 +77,11 @@ class AchievementsRepository @Inject constructor(
         prDates: List<Date>,
         programs: List<Program>,
         exercises: List<Exercise>,
-        bodyMeasurements: List<BodyMeasurement>
+        bodyMeasurements: List<BodyMeasurement>,
+        workoutExercises: List<com.chilluminati.rackedup.data.database.entity.WorkoutExercise>,
+        exerciseSets: List<ExerciseSet>
     ): List<State> {
-        val workoutsSorted = workouts.sortedBy { it.date }
+        val workoutsSorted = workouts.filter { it.isCompleted }.sortedBy { it.date }
         val totalWorkouts = workoutsSorted.size
 
         val daysWithWorkouts = workoutsSorted.map { truncateToDay(it.date) }.toSet()
@@ -91,16 +99,26 @@ class AchievementsRepository @Inject constructor(
         val programFinish8 = programs.firstOrNull { it.endDate != null && (it.durationWeeks ?: 0) >= 8 }
         val programFinish12 = programs.firstOrNull { it.endDate != null && (it.durationWeeks ?: 0) >= 12 }
         
-        // Calculate exercise variety metrics - for now, use all exercises since we don't have workout exercises in this scope
-        // TODO: In a real implementation, we'd need to get exercises actually used in workouts
-        val uniqueExercises = exercises.distinctBy { it.id }.size
-        val uniqueMuscleGroups = exercises.flatMap { it.muscleGroups }.distinct().size
-        val uniqueEquipment = exercises.map { it.equipment }.distinct().size
+        // Calculate exercise variety metrics based on exercises actually performed with completed sets
+        val completedSetExerciseIds = exerciseSets
+            .filter { it.isCompleted }
+            .map { it.workoutExerciseId }
+            .distinct()
+            .flatMap { workoutExerciseId ->
+                workoutExercises.filter { it.id == workoutExerciseId }.map { it.exerciseId }
+            }
+            .distinct()
         
-        // Calculate body measurement metrics
-        val bodyMeasurementCount = bodyMeasurements.size
-        val firstMeasurementDate = bodyMeasurements.minByOrNull { it.measuredAt }?.measuredAt
-        val nthMeasurementDate = if (bodyMeasurements.size >= 10) bodyMeasurements.sortedBy { it.measuredAt }[9].measuredAt else null
+        val performedExercises = exercises.filter { it.id in completedSetExerciseIds }
+        val uniqueExercises = performedExercises.size
+        val uniqueMuscleGroups = performedExercises.flatMap { it.muscleGroups }.distinct().size
+        val uniqueEquipment = performedExercises.map { it.equipment }.distinct().size
+        
+        // Calculate body measurement metrics - only count meaningful measurements
+        val meaningfulMeasurements = bodyMeasurements.filter { it.value > 0 && it.measurementType.isNotBlank() }
+        val bodyMeasurementCount = meaningfulMeasurements.size
+        val firstMeasurementDate = meaningfulMeasurements.minByOrNull { it.measuredAt }?.measuredAt
+        val nthMeasurementDate = if (meaningfulMeasurements.size >= 10) meaningfulMeasurements.sortedBy { it.measuredAt }[9].measuredAt else null
 
         return defs.map { def ->
             val (unlocked, date) = when (def.id) {
@@ -189,8 +207,8 @@ class AchievementsRepository @Inject constructor(
                 "year_consistency" -> (daysWithWorkouts.size >= 365) to null // Assuming 365 days for a year
 
                 // NEW: Template Achievements
-                "template_creator" -> workouts.any { it.isTemplate } to workouts.firstOrNull { it.isTemplate }?.date
-                "template_user" -> workouts.any { it.isTemplate } to workouts.firstOrNull { it.isTemplate }?.date
+                "template_creator" -> workouts.any { it.isTemplate && it.name.isNotBlank() } to workouts.firstOrNull { it.isTemplate && it.name.isNotBlank() }?.date
+                "template_user" -> workouts.any { it.isTemplate && it.name.isNotBlank() } to workouts.firstOrNull { it.isTemplate && it.name.isNotBlank() }?.date
 
                 // NEW: Advanced Volume Achievements
                 "volume_5m" -> thresholdDateByCumulative(workoutsSorted) { it.totalVolume }(5_000_000.0)
@@ -205,11 +223,11 @@ class AchievementsRepository @Inject constructor(
                 "single_sets_100" -> singleWorkoutThreshold(workoutsSorted) { it.totalSets.toDouble() }(100.0)
 
                 // NEW: Advanced Tracking Achievements
-                "weight_progression_5" -> (bodyMeasurements.filter { it.measurementType == "Weight" }.size >= 5) to bodyMeasurements.filter { it.measurementType == "Weight" }.sortedBy { it.measuredAt }.getOrNull(4)?.measuredAt
-                "weight_progression_10" -> (bodyMeasurements.filter { it.measurementType == "Weight" }.size >= 10) to bodyMeasurements.filter { it.measurementType == "Weight" }.sortedBy { it.measuredAt }.getOrNull(9)?.measuredAt
-                "body_fat_tracking" -> (bodyMeasurements.any { it.measurementType == "Body Fat" }) to bodyMeasurements.filter { it.measurementType == "Body Fat" }.minByOrNull { it.measuredAt }?.measuredAt
-                "measurement_streak_7" -> (hasMeasurementStreak(bodyMeasurements, 7)) to getMeasurementStreakDate(bodyMeasurements, 7)
-                "measurement_streak_30" -> (hasMeasurementStreak(bodyMeasurements, 30)) to getMeasurementStreakDate(bodyMeasurements, 30)
+                "weight_progression_5" -> (meaningfulMeasurements.filter { it.measurementType == "Weight" }.size >= 5) to meaningfulMeasurements.filter { it.measurementType == "Weight" }.sortedBy { it.measuredAt }.getOrNull(4)?.measuredAt
+                "weight_progression_10" -> (meaningfulMeasurements.filter { it.measurementType == "Weight" }.size >= 10) to meaningfulMeasurements.filter { it.measurementType == "Weight" }.sortedBy { it.measuredAt }.getOrNull(9)?.measuredAt
+                "body_fat_tracking" -> (meaningfulMeasurements.any { it.measurementType == "Body Fat" }) to meaningfulMeasurements.filter { it.measurementType == "Body Fat" }.minByOrNull { it.measuredAt }?.measuredAt
+                "measurement_streak_7" -> (hasMeasurementStreak(meaningfulMeasurements, 7)) to getMeasurementStreakDate(meaningfulMeasurements, 7)
+                "measurement_streak_30" -> (hasMeasurementStreak(meaningfulMeasurements, 30)) to getMeasurementStreakDate(meaningfulMeasurements, 30)
                 "weekly_volume_consistency" -> (hasWeeklyVolumeConsistency(workoutsSorted, 4)) to getWeeklyVolumeConsistencyDate(workoutsSorted, 4)
                 "monthly_volume_consistency" -> (hasMonthlyVolumeConsistency(workoutsSorted, 3)) to getMonthlyVolumeConsistencyDate(workoutsSorted, 3)
                 "progressive_overload" -> (hasProgressiveOverload(workoutsSorted)) to getProgressiveOverloadDate(workoutsSorted)
@@ -219,7 +237,7 @@ class AchievementsRepository @Inject constructor(
                 "intensity_master" -> (hasHighIntensityTraining(workoutsSorted)) to getHighIntensityDate(workoutsSorted)
                 "recovery_tracker" -> (hasRecoveryTracking(workoutsSorted)) to getRecoveryTrackingDate(workoutsSorted)
                 "periodization_master" -> (hasPeriodization(workoutsSorted)) to getPeriodizationDate(workoutsSorted)
-                "data_analyst" -> (hasComprehensiveTracking(workoutsSorted, bodyMeasurements)) to getComprehensiveTrackingDate(workoutsSorted, bodyMeasurements)
+                "data_analyst" -> (hasComprehensiveTracking(workoutsSorted, meaningfulMeasurements)) to getComprehensiveTrackingDate(workoutsSorted, meaningfulMeasurements)
 
                 else -> false to null
             }

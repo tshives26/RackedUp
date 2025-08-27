@@ -15,6 +15,9 @@ interface ExerciseSetDao {
     @Query("SELECT * FROM exercise_sets")
     suspend fun getAllExerciseSets(): List<ExerciseSet>
     
+    @Query("SELECT * FROM exercise_sets")
+    fun getAllExerciseSetsFlow(): Flow<List<ExerciseSet>>
+    
     @Query("""
         SELECT es.* FROM exercise_sets es
         INNER JOIN workout_exercises we ON es.workout_exercise_id = we.id
