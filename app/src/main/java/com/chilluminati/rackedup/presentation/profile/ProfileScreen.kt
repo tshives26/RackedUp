@@ -363,7 +363,13 @@ fun AchievementsDialog(
     total: Int,
     onDismiss: () -> Unit
 ) {
-    val sorted = remember(states) { states.sortedByDescending { it.isUnlocked } }
+    val sorted = remember(states) { 
+        states.sortedWith(
+            compareByDescending<com.chilluminati.rackedup.data.repository.AchievementsRepository.State> { it.isUnlocked }
+                .thenBy { it.definition.category.name }
+                .thenBy { it.definition.title }
+        ) 
+    }
     var showOnly by remember { mutableStateOf(0) } // 0 = All, 1 = Unlocked, 2 = Locked
     var categoryFilter by remember { mutableStateOf<com.chilluminati.rackedup.data.repository.AchievementsRepository.Category?>(null) }
 
@@ -400,24 +406,40 @@ fun AchievementsDialog(
                     }
 
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Group by category
+                        // Create a flat list with category headers and achievement items
+                        val items = mutableListOf<Any>()
                         val groups = filtered.groupBy { it.definition.category }
                         groups.forEach { (category, list) ->
-                            item {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(categoryIcon(category), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = category.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            items.add(category) // Add category as header
+                            items.addAll(list) // Add all achievements in this category
+                        }
+                        
+                        items(items, key = { item ->
+                            when (item) {
+                                is com.chilluminati.rackedup.data.repository.AchievementsRepository.Category -> "category_${item.name}"
+                                is com.chilluminati.rackedup.data.repository.AchievementsRepository.State -> "achievement_${item.definition.id}"
+                                else -> item.hashCode().toString()
+                            }
+                        }) { item ->
+                            when (item) {
+                                is com.chilluminati.rackedup.data.repository.AchievementsRepository.Category -> {
+                                    // Category header
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(categoryIcon(item), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(text = item.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                is com.chilluminati.rackedup.data.repository.AchievementsRepository.State -> {
+                                    // Achievement item
+                                    AchievementListItem(
+                                        title = item.definition.title,
+                                        description = item.definition.description,
+                                        isUnlocked = item.isUnlocked,
+                                        unlockedAt = item.unlockedAt
+                                    )
                                 }
                             }
-                                                         items(list) { st ->
-                                 AchievementListItem(
-                                     title = st.definition.title,
-                                     description = st.definition.description,
-                                     isUnlocked = st.isUnlocked,
-                                     unlockedAt = st.unlockedAt
-                                 )
-                             }
                         }
                     }
                 }
