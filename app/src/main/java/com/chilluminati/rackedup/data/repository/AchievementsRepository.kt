@@ -13,6 +13,7 @@ import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.data.database.entity.BodyMeasurement
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
+import com.chilluminati.rackedup.data.database.entity.PersonalRecord
 import com.chilluminati.rackedup.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -60,15 +61,24 @@ class AchievementsRepository @Inject constructor(
     fun observeAchievements(): Flow<List<State>> {
         // Recompute when any of workouts, PRs, programs, exercises, or body measurements change
         return combine(
-            workoutDao.getAllWorkouts(),
-            personalRecordDao.getAllPersonalRecordsFlow(),
-            programDao.getAllPrograms(),
-            exerciseDao.getAllExercises(),
-            bodyMeasurementDao.getBodyMeasurements("weight"), // Use weight as default type
-            workoutExerciseDao.getAllWorkoutExercisesFlow(),
-            exerciseSetDao.getAllExerciseSetsFlow()
-        ) { workouts, prs, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets ->
-            computeStates(workouts, prs.map { it.achievedAt }, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets)
+            listOf(
+                workoutDao.getAllWorkouts(),
+                personalRecordDao.getAllPersonalRecordsFlow(),
+                programDao.getAllPrograms(),
+                exerciseDao.getAllExercises(),
+                bodyMeasurementDao.getBodyMeasurements("weight"), // Use weight as default type
+                workoutExerciseDao.getAllWorkoutExercisesFlow(),
+                exerciseSetDao.getAllExerciseSetsFlow()
+            )
+        ) { values ->
+            val workouts = values[0] as List<Workout>
+            val prs = values[1] as List<*>
+            val programs = values[2] as List<Program>
+            val exercises = values[3] as List<Exercise>
+            val bodyMeasurements = values[4] as List<BodyMeasurement>
+            val workoutExercises = values[5] as List<com.chilluminati.rackedup.data.database.entity.WorkoutExercise>
+            val exerciseSets = values[6] as List<ExerciseSet>
+            computeStates(workouts, prs.map { (it as PersonalRecord).achievedAt }, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets)
         }
     }
 
