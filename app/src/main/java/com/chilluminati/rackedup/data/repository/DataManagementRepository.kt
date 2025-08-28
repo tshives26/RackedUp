@@ -2,6 +2,7 @@
 package com.chilluminati.rackedup.data.repository
 
 import android.content.Context
+import com.chilluminati.rackedup.core.util.Constants
 import com.chilluminati.rackedup.data.database.RackedUpDatabase
 import com.chilluminati.rackedup.data.database.entity.*
 import com.chilluminati.rackedup.di.IoDispatcher
@@ -754,6 +755,7 @@ class DataManagementRepository @Inject constructor(
 
     /**
      * Reset all app data (dangerous operation)
+     * This completely clears all data and cache to simulate a fresh install
      */
     suspend fun resetAllData(): Result<String> = withContext(ioDispatcher) {
         try {
@@ -767,17 +769,131 @@ class DataManagementRepository @Inject constructor(
             
             android.util.Log.i("DataManagementRepository", "Data before reset - Workouts: $workoutCount, Exercises: $exerciseCount, Profiles: $profileCount")
             
-            // Only proceed if this is explicitly called from the data management screen
-            // (This is a safety measure - the UI should have proper confirmation dialogs)
-            
+            // 1. Clear all database tables
             database.clearData()
+            
+            // 2. Clear all cache directories
             context.cacheDir.deleteRecursively()
             
-            android.util.Log.w("DataManagementRepository", "All app data has been reset successfully")
-            Result.success("All app data has been reset")
+            // 3. Clear all files in app's private directory (except database files which are handled above)
+            val filesDir = context.filesDir
+            filesDir.listFiles()?.forEach { file ->
+                if (file.isFile && !file.name.contains("rackedup_database")) {
+                    file.delete()
+                } else if (file.isDirectory) {
+                    file.deleteRecursively()
+                }
+            }
+            
+            // 4. Clear shared preferences (DataStore)
+            clearAllPreferences()
+            
+            // 5. Clear auto-backup settings and cancel any scheduled backups
+            clearAutoBackupSettings()
+            
+            // 6. Clear any local backup files
+            clearLocalBackupFiles()
+            
+            // 7. Clear any external storage cache
+            context.externalCacheDir?.deleteRecursively()
+            
+            // 8. Delete the actual database file to force complete recreation
+            val dbFile = File(context.getDatabasePath("rackedup_database").absolutePath)
+            if (dbFile.exists()) {
+                dbFile.delete()
+                android.util.Log.i("DataManagementRepository", "Database file deleted")
+            }
+            
+            // 9. Delete database journal and other related files
+            val dbDir = dbFile.parentFile
+            dbDir?.listFiles()?.forEach { file ->
+                if (file.name.startsWith("rackedup_database")) {
+                    file.delete()
+                    android.util.Log.i("DataManagementRepository", "Deleted database file: ${file.name}")
+                }
+            }
+            
+            // 10. Close the database connection
+            database.close()
+            
+            android.util.Log.w("DataManagementRepository", "All app data has been reset successfully - app is now in fresh install state")
+            Result.success("All app data has been reset - app is now in fresh install state")
         } catch (e: Exception) {
             android.util.Log.e("DataManagementRepository", "Failed to reset data", e)
             Result.failure(e)
+        }
+    }
+    
+    /**
+     * Clear all DataStore preferences
+     */
+    private suspend fun clearAllPreferences() {
+        try {
+            // Get the DataStore preferences file and clear it
+            val prefsFile = File(context.filesDir, "datastore/rackedup_preferences.preferences_pb")
+            if (prefsFile.exists()) {
+                prefsFile.delete()
+            }
+            
+            // Also clear the preferences directory
+            val prefsDir = File(context.filesDir, "datastore")
+            if (prefsDir.exists()) {
+                prefsDir.deleteRecursively()
+            }
+            
+            // Clear any legacy SharedPreferences files
+            val sharedPrefsDir = File(context.filesDir, "shared_prefs")
+            if (sharedPrefsDir.exists()) {
+                sharedPrefsDir.deleteRecursively()
+            }
+            
+            android.util.Log.i("DataManagementRepository", "All preferences cleared")
+        } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to clear preferences", e)
+        }
+    }
+    
+    /**
+     * Clear any local backup files that might be stored
+     */
+    private suspend fun clearLocalBackupFiles() {
+        try {
+            // Clear any backup files in the app's private directory
+            val filesDir = context.filesDir
+            filesDir.walkTopDown().forEach { file ->
+                if (file.isFile && (file.name.endsWith(".zip") || file.name.endsWith(".rub") || file.name.contains("backup"))) {
+                    file.delete()
+                    android.util.Log.i("DataManagementRepository", "Deleted backup file: ${file.name}")
+                }
+            }
+            
+            // Clear any backup files in external storage (if accessible)
+            context.getExternalFilesDir(null)?.let { externalDir ->
+                externalDir.walkTopDown().forEach { file ->
+                    if (file.isFile && (file.name.endsWith(".zip") || file.name.endsWith(".rub") || file.name.contains("backup"))) {
+                        file.delete()
+                        android.util.Log.i("DataManagementRepository", "Deleted external backup file: ${file.name}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to clear backup files", e)
+        }
+    }
+    
+    /**
+     * Clear auto-backup settings and cancel scheduled backups
+     */
+    private suspend fun clearAutoBackupSettings() {
+        try {
+            // Cancel any scheduled auto-backup work
+            val workManager = androidx.work.WorkManager.getInstance(context)
+            workManager.cancelAllWorkByTag(Constants.AUTO_BACKUP_WORK_TAG)
+            workManager.cancelUniqueWork(Constants.AUTO_BACKUP_WORK_TAG)
+            
+            android.util.Log.i("DataManagementRepository", "Auto-backup work cancelled")
+        } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to clear auto-backup settings", e)
         }
     }
 
