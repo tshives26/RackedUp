@@ -26,7 +26,7 @@ import com.chilluminati.rackedup.core.util.Constants.DATABASE_NAME
         PersonalRecord::class,
         BodyMeasurement::class
     ],
-    version = 6,
+    version = 1,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

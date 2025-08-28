@@ -5,11 +5,7 @@ import androidx.room.Room
 import com.chilluminati.rackedup.core.util.Constants.DATABASE_NAME
 import com.chilluminati.rackedup.data.database.RackedUpDatabase
 import com.chilluminati.rackedup.data.database.dao.*
-import com.chilluminati.rackedup.data.database.migrations.MIGRATION_1_2
-import com.chilluminati.rackedup.data.database.migrations.MIGRATION_2_3
-import com.chilluminati.rackedup.data.database.migrations.MIGRATION_3_4
-import com.chilluminati.rackedup.data.database.migrations.MIGRATION_4_5
-import com.chilluminati.rackedup.data.database.migrations.MIGRATION_5_6
+
 import com.chilluminati.rackedup.data.repository.UserProfileRepository
 import dagger.Module
 import dagger.Provides
@@ -33,17 +29,9 @@ object DatabaseModule {
             RackedUpDatabase::class.java,
             DATABASE_NAME
         )
-            // Temporarily enable destructive migration for development to fix migration issues
+            // Enable destructive migration for development
+            // This will recreate the database if schema changes occur
             .fallbackToDestructiveMigration()
-            // Remove fallbackToDestructiveMigration() to prevent data loss
-            // Add proper migrations instead
-            .addMigrations(
-                MIGRATION_1_2,
-                MIGRATION_2_3,
-                MIGRATION_3_4,
-                MIGRATION_4_5,
-                MIGRATION_5_6
-            )
             .build()
     }
 
