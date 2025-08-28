@@ -705,19 +705,64 @@ class DataManagementRepository @Inject constructor(
         }
     }
 
-    /** Download and import Free Exercise DB from remote */
+    /** Import Free Exercise DB from assets */
+    suspend fun importFreeExerciseDbFromAssets(): Result<String> = withContext(ioDispatcher) {
+        return@withContext try {
+            android.util.Log.i("DataManagementRepository", "Attempting to import exercises from assets...")
+            val inputStream = context.assets.open("exercises/exercises.json")
+            val result = importFreeExerciseDbJson(inputStream)
+            android.util.Log.i("DataManagementRepository", "Successfully imported exercises from assets")
+            result
+        } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to import exercises from assets", e)
+            Result.failure(e)
+        }
+    }
+
+    /** Download and import Free Exercise DB from remote with retry logic */
     suspend fun importFreeExerciseDbFromRemote(): Result<String> = withContext(ioDispatcher) {
         return@withContext try {
-            val client = OkHttpClient()
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+            
             val request = Request.Builder()
                 .url("https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json")
+                .addHeader("User-Agent", "RackedUp-Android-App")
                 .build()
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) throw IOException("Unexpected code ${response.code}")
-            response.body?.byteStream()?.use { stream ->
-                importFreeExerciseDbJson(stream)
-            } ?: Result.failure(IllegalStateException("Empty body"))
+            
+            // Retry up to 3 times
+            var lastException: Exception? = null
+            for (attempt in 1..3) {
+                try {
+                    android.util.Log.i("DataManagementRepository", "Attempting to download exercises (attempt $attempt/3)")
+                    
+                    val response = client.newCall(request).execute()
+                    if (!response.isSuccessful) {
+                        throw IOException("HTTP ${response.code}: ${response.message}")
+                    }
+                    
+                    response.body?.byteStream()?.use { stream ->
+                        val result = importFreeExerciseDbJson(stream)
+                        android.util.Log.i("DataManagementRepository", "Successfully downloaded and imported exercises on attempt $attempt")
+                        return@withContext result
+                    } ?: throw IllegalStateException("Empty response body")
+                    
+                } catch (e: Exception) {
+                    lastException = e
+                    android.util.Log.w("DataManagementRepository", "Download attempt $attempt failed: ${e.message}")
+                    
+                    if (attempt < 3) {
+                        // Wait before retrying (exponential backoff)
+                        kotlinx.coroutines.delay(1000L * attempt)
+                    }
+                }
+            }
+            
+            Result.failure(lastException ?: Exception("All download attempts failed"))
         } catch (e: Exception) {
+            android.util.Log.e("DataManagementRepository", "Failed to download exercises from remote", e)
             Result.failure(e)
         }
     }

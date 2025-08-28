@@ -498,4 +498,44 @@ class DataManagementViewModel @Inject constructor(
     fun consumeRestartRequest() {
         _uiState.update { it.copy(shouldRestartApp = false) }
     }
+    
+    /**
+     * Manually download exercises from remote source
+     */
+    fun downloadExercisesFromRemote() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val result = dataManagementRepository.importFreeExerciseDbFromRemote()
+                result.fold(
+                    onSuccess = { message ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                message = message,
+                                isError = false
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                message = "Failed to download exercises: ${error.message}",
+                                isError = true
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        message = "Failed to download exercises: ${e.message}",
+                        isError = true
+                    )
+                }
+            }
+        }
+    }
 }

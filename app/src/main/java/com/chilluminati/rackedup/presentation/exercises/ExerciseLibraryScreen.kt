@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +48,8 @@ fun ExerciseLibraryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
+    
+    android.util.Log.i("ExerciseLibraryScreen", "Screen initialized - exercises: ${uiState.exercises.size}, isLoading: ${uiState.isLoading}")
     
     // Show error snackbar if there's an error
     LaunchedEffect(uiState.error) {
@@ -216,13 +219,17 @@ fun ExerciseLibraryScreen(
                 mechanic == "All" &&
                 primary == "All" &&
                 force == "All"
+            
+            android.util.Log.i("ExerciseLibraryScreen", "UI State - exercises: ${uiState.exercises.size}, isLoading: ${uiState.isLoading}, isDefaultFilters: $isDefaultFilters")
             ExerciseList(
                 exercises = uiState.exercises,
                 isLoading = uiState.isLoading,
+                uiState = uiState,
                 onExerciseCardClick = onNavigateToExerciseDetail,
                 onAddExercise = if (isSelectionMode && onExerciseSelected != null) onExerciseSelected else null,
                 isSelectionMode = isSelectionMode,
                 showReloadHint = isDefaultFilters,
+                onRefreshExercises = { viewModel.refreshExercises() },
                 modifier = Modifier
                     .weight(1f)
             )
@@ -267,12 +274,15 @@ private fun ExerciseCategoryChips(
 private fun ExerciseList(
     exercises: List<Exercise>,
     isLoading: Boolean,
+    uiState: ExerciseLibraryUiState,
     onExerciseCardClick: (Long) -> Unit,
     onAddExercise: ((Long) -> Unit)? = null,
     isSelectionMode: Boolean = false,
     showReloadHint: Boolean = false,
+    onRefreshExercises: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    android.util.Log.i("ExerciseList", "ExerciseList called - exercises: ${exercises.size}, isLoading: $isLoading, showReloadHint: $showReloadHint")
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -284,17 +294,78 @@ private fun ExerciseList(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator()
+                        Text(
+                            text = "Loading exercises...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        } else if (uiState.isDownloading) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     CircularProgressIndicator()
+                    Text(
+                        text = uiState.downloadMessage ?: "Downloading exercises...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else if (uiState.downloadMessage != null && !uiState.isDownloading && exercises.isEmpty()) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    EmptyStateCard(
+                        title = "Download Complete",
+                        description = uiState.downloadMessage,
+                        icon = Icons.Default.CheckCircle
+                    )
+                    SecondaryButton(
+                        onClick = {
+                            android.util.Log.i("ExerciseLibraryScreen", "Refresh after download button clicked")
+                            onRefreshExercises()
+                        }
+                    ) {
+                        Text("Refresh Exercises")
+                    }
                 }
             }
         } else if (exercises.isEmpty()) {
             item {
+                android.util.Log.i("ExerciseLibraryScreen", "Exercises empty, showReloadHint: $showReloadHint")
                 if (showReloadHint) {
-                    EmptyStateCard(
-                        title = "No exercises loaded",
-                        description = "Please reload the app to see the full exercise list.",
-                        icon = Icons.Default.Refresh
-                    )
+                    android.util.Log.i("ExerciseLibraryScreen", "Showing retry button")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        EmptyStateCard(
+                            title = "No exercises loaded",
+                            description = "The exercise library is being downloaded for the first time. This may take a moment.",
+                            icon = Icons.Default.Download
+                        )
+                        SecondaryButton(
+                            onClick = {
+                                android.util.Log.i("ExerciseLibraryScreen", "Retry Loading button clicked")
+                                onRefreshExercises()
+                            }
+                        ) {
+                            Text("Retry Loading")
+                        }
+                    }
                 } else {
                     EmptyStateCard(
                         title = stringResource(R.string.no_exercises_found),

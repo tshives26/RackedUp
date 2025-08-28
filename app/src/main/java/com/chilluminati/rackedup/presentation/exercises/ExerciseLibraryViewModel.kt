@@ -17,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ExerciseLibraryViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
+    private val dataManagementRepository: com.chilluminati.rackedup.data.repository.DataManagementRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     
@@ -57,23 +58,13 @@ class ExerciseLibraryViewModel @Inject constructor(
     private val _primaryMuscleOptions = MutableStateFlow(listOf("All"))
     val primaryMuscleOptions: StateFlow<List<String>> = _primaryMuscleOptions.asStateFlow()
     
-    init {
-        loadExercises()
-        // Build dynamic category list
-        viewModelScope.launch(ioDispatcher) {
-            exerciseRepository.getAllExercises()
-                .map { list -> list.map { it.category }
-                    .filter { it.isNotBlank() }
-                    .map { it.replaceFirstChar { c -> c.uppercase() } }
-                    .distinct()
-                    .sorted() }
-                .collect { cats -> _categories.value = listOf("All") + cats }
-        }
-    }
+
     
     private fun loadExercises() {
+        android.util.Log.i("ExerciseLibraryViewModel", "loadExercises() called")
         viewModelScope.launch(ioDispatcher) {
             try {
+                android.util.Log.i("ExerciseLibraryViewModel", "Starting to load exercises...")
                 _uiState.value = _uiState.value.copy(isLoading = true)
 
                 data class Filters(
@@ -128,6 +119,7 @@ class ExerciseLibraryViewModel @Inject constructor(
                         force = filters.force
                     )
                 }.collect { filteredExercises ->
+                    android.util.Log.i("ExerciseLibraryViewModel", "Loaded ${filteredExercises.size} exercises")
                     _uiState.value = _uiState.value.copy(
                         exercises = filteredExercises,
                         isLoading = false,
@@ -135,6 +127,7 @@ class ExerciseLibraryViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                android.util.Log.e("ExerciseLibraryViewModel", "Error loading exercises", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load exercises"
@@ -195,6 +188,8 @@ class ExerciseLibraryViewModel @Inject constructor(
     private fun String.capitalized(): String = if (isEmpty()) this else replaceFirstChar { it.uppercase() }
 
     init {
+        android.util.Log.i("ExerciseLibraryViewModel", "ViewModel init started")
+        loadExercises()
         // Build dynamic lists for filters
         viewModelScope.launch(ioDispatcher) {
             exerciseRepository.getAllExercises()
@@ -244,6 +239,97 @@ class ExerciseLibraryViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+    
+    /**
+     * Manually refresh exercises (useful if initial seeding failed)
+     */
+    fun refreshExercises() {
+        android.util.Log.i("ExerciseLibraryViewModel", "refreshExercises() called")
+        
+        // First try to seed exercises if database is empty
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val count = exerciseRepository.getAllExercisesList().size
+                android.util.Log.i("ExerciseLibraryViewModel", "Current exercise count: $count")
+                
+                if (count == 0) {
+                    android.util.Log.i("ExerciseLibraryViewModel", "Database is empty, attempting to seed exercises...")
+                    
+                    // Show downloading state
+                    _uiState.value = _uiState.value.copy(
+                        isDownloading = true,
+                        downloadMessage = "Downloading exercise library..."
+                    )
+                    
+                    // Try to manually seed exercises from assets
+                    try {
+                        _uiState.value = _uiState.value.copy(
+                            downloadMessage = "Loading exercises from local database..."
+                        )
+                        
+                        val result = dataManagementRepository.importFreeExerciseDbFromAssets()
+                        result.fold(
+                            onSuccess = { message ->
+                                android.util.Log.i("ExerciseLibraryViewModel", "Successfully seeded exercises: $message")
+                                _uiState.value = _uiState.value.copy(
+                                    isDownloading = false,
+                                    downloadMessage = "Successfully loaded $message"
+                                )
+                            },
+                            onFailure = { error ->
+                                android.util.Log.e("ExerciseLibraryViewModel", "Failed to seed exercises from assets, trying remote", error)
+                                
+                                _uiState.value = _uiState.value.copy(
+                                    downloadMessage = "Local database failed, downloading from internet..."
+                                )
+                                
+                                // Try remote download as fallback
+                                val remoteResult = dataManagementRepository.importFreeExerciseDbFromRemote()
+                                remoteResult.fold(
+                                    onSuccess = { remoteMessage ->
+                                        android.util.Log.i("ExerciseLibraryViewModel", "Successfully seeded exercises from remote: $remoteMessage")
+                                        _uiState.value = _uiState.value.copy(
+                                            isDownloading = false,
+                                            downloadMessage = "Successfully downloaded $remoteMessage"
+                                        )
+                                    },
+                                    onFailure = { remoteError ->
+                                        android.util.Log.e("ExerciseLibraryViewModel", "Failed to seed exercises from remote", remoteError)
+                                        _uiState.value = _uiState.value.copy(
+                                            isDownloading = false,
+                                            downloadMessage = "Failed to download exercises. Please try again.",
+                                            error = remoteError.message
+                                        )
+                                    }
+                                )
+                            }
+                        )
+                    } catch (e: Exception) {
+                        android.util.Log.e("ExerciseLibraryViewModel", "Error during manual seeding", e)
+                        _uiState.value = _uiState.value.copy(
+                            isDownloading = false,
+                            downloadMessage = "Error downloading exercises. Please try again.",
+                            error = e.message
+                        )
+                    }
+                } else {
+                    // Exercises already exist, just reload
+                    _uiState.value = _uiState.value.copy(
+                        downloadMessage = "Exercises already loaded. Refreshing..."
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ExerciseLibraryViewModel", "Error checking exercise count", e)
+                _uiState.value = _uiState.value.copy(
+                    isDownloading = false,
+                    downloadMessage = "Error checking exercise database. Please try again.",
+                    error = e.message
+                )
+            }
+        }
+        
+        loadExercises()
+    }
 }
 
 /**
@@ -252,5 +338,7 @@ class ExerciseLibraryViewModel @Inject constructor(
 data class ExerciseLibraryUiState(
     val exercises: List<Exercise> = emptyList(),
     val isLoading: Boolean = false,
+    val isDownloading: Boolean = false,
+    val downloadMessage: String? = null,
     val error: String? = null
 )

@@ -24,6 +24,15 @@ class ExerciseRepository @Inject constructor(
     fun getAllExercises(): Flow<List<Exercise>> = exerciseDao.getAllExercises()
     
     /**
+     * Get all exercises as a list (synchronous)
+     */
+    suspend fun getAllExercisesList(): List<Exercise> {
+        return withContext(ioDispatcher) {
+            exerciseDao.getAllExercisesList()
+        }
+    }
+    
+    /**
      * Get exercises by category
      */
     fun getExercisesByCategory(category: String): Flow<List<Exercise>> =

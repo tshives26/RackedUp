@@ -22,6 +22,7 @@ import android.app.Notification
 import androidx.room.Room
 import com.chilluminati.rackedup.data.database.RackedUpDatabase
 import com.chilluminati.rackedup.data.repository.DataManagementRepository
+import com.chilluminati.rackedup.core.util.NetworkUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +37,9 @@ class RackedUpApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+    
+    @Inject
+    lateinit var networkUtils: NetworkUtils
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -129,14 +133,40 @@ class RackedUpApplication : Application(), Configuration.Provider {
                 val db = RackedUpDatabase.getDatabase(this@RackedUpApplication)
                 val count = db.exerciseDao().getAllExercisesList().size
                 if (count == 0) {
-                    // Read prebundled JSON from assets
-                    val json = assets.open("exercises/exercises.json").bufferedReader().use { it.readText() }
-                    // Use repository-style import to map schema
-                    val repo = DataManagementRepository(this@RackedUpApplication, db, Dispatchers.IO)
-                    val result = repo.importFreeExerciseDbJson(
-                        json.byteInputStream(),
-                        baseImageUrl = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
-                    )
+                    android.util.Log.i("RackedUpApplication", "No exercises found, attempting to seed...")
+                    
+                    // Check network connectivity first
+                    val hasNetwork = networkUtils.isNetworkAvailable()
+                    
+                    if (!hasNetwork) {
+                        android.util.Log.w("RackedUpApplication", "No network connectivity available for exercise download")
+                    }
+                    
+                    // Try to load from assets first
+                    val result = try {
+                        val json = assets.open("exercises/exercises.json").bufferedReader().use { it.readText() }
+                        val repo = DataManagementRepository(this@RackedUpApplication, db, Dispatchers.IO)
+                        repo.importFreeExerciseDbJson(
+                            json.byteInputStream(),
+                            baseImageUrl = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
+                        )
+                    } catch (e: Exception) {
+                        android.util.Log.w("RackedUpApplication", "Failed to load exercises from assets, trying remote download", e)
+                        
+                        // Fallback to remote download only if network is available
+                        if (hasNetwork) {
+                            try {
+                                val repo = DataManagementRepository(this@RackedUpApplication, db, Dispatchers.IO)
+                                repo.importFreeExerciseDbFromRemote()
+                            } catch (remoteError: Exception) {
+                                android.util.Log.e("RackedUpApplication", "Failed to download exercises from remote", remoteError)
+                                Result.failure(remoteError)
+                            }
+                        } else {
+                            Result.failure(Exception("No network connectivity available for exercise download"))
+                        }
+                    }
+                    
                     result.fold(
                         onSuccess = { message ->
                             android.util.Log.i("RackedUpApplication", "Successfully seeded exercises: $message")
@@ -145,7 +175,7 @@ class RackedUpApplication : Application(), Configuration.Provider {
                                 .enqueue(OneTimeWorkRequestBuilder<ImagePrefetchWorker>().build())
                         },
                         onFailure = { error ->
-                            android.util.Log.e("RackedUpApplication", "Failed to seed exercises", error)
+                            android.util.Log.e("RackedUpApplication", "Failed to seed exercises from all sources", error)
                         }
                     )
                 } else {
