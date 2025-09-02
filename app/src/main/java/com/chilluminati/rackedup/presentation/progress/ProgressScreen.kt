@@ -528,13 +528,15 @@ private fun OverviewTab(
             }
         }
 
-        // Charts Section
-        item {
-            Text(
-                text = "Charts & Analytics",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+        // Core Progress Metrics
+        if (hasData) {
+            item {
+                Text(
+                    text = "Core Progress Metrics",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         if (!hasData) {
@@ -555,8 +557,19 @@ private fun OverviewTab(
                     relativeStrengthData = universalStrengthData,
                     volumeLoadData = volumeLoadData,
                     modifier = Modifier,
-                    title = "Universal Strength Progress",
+                    title = "Strength & Volume Progress",
                     weightUnit = weightUnit
+                )
+            }
+        }
+
+        // Workout Performance
+        if (hasData) {
+            item {
+                Text(
+                    text = "Workout Performance",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -575,7 +588,18 @@ private fun OverviewTab(
                     improvementData = progressionData,
                     progressionRateData = weeklyProgressData,
                     modifier = Modifier,
-                    title = "Progression Tracking"
+                    title = "Weekly Progress"
+                )
+            }
+        }
+
+        // Consistency & Variety
+        if (hasData) {
+            item {
+                Text(
+                    text = "Consistency & Variety",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -589,13 +613,15 @@ private fun OverviewTab(
             }
 
             item {
-                ConsistencyChart(data = consistencyData, modifier = Modifier, title = "Consistency (last 12 weeks)")
+                ConsistencyChart(data = consistencyData, modifier = Modifier, title = "Weekly Consistency")
             }
-            
-            // Advanced Analytics Section
+        }
+
+        // Future Analytics Placeholder
+        if (hasData) {
             item {
                 Text(
-                    text = "Advanced Analytics",
+                    text = "Coming Soon",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -613,24 +639,24 @@ private fun OverviewTab(
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                                                 Icon(
-                             imageVector = Icons.Default.TrendingUp,
-                             contentDescription = null,
-                             modifier = Modifier.size(32.dp),
-                             tint = MaterialTheme.colorScheme.onSurfaceVariant
-                         )
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Advanced Analytics Coming Soon",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium
                         )
-                                                 Text(
-                             text = "Future updates will include strength progression, body composition tracking, and personalized insights.",
-                             style = MaterialTheme.typography.bodyMedium,
-                             textAlign = TextAlign.Center,
-                             color = MaterialTheme.colorScheme.onSurfaceVariant
-                         )
+                        Text(
+                            text = "Future updates will include strength progression, body composition tracking, and personalized insights.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -648,8 +674,6 @@ private fun OverviewTab(
         }
     }
 }
-
-
 
 @Composable
 private fun PersonalRecordsTab(

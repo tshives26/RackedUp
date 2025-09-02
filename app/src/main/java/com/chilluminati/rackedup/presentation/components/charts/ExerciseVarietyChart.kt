@@ -94,8 +94,7 @@ fun ExerciseVarietyChart(
                             }
 
                             axisRight.isEnabled = false
-                            legend.isEnabled = true
-                            legend.textColor = onSurfaceColor
+                            legend.isEnabled = false
                         }
                     },
                     update = { chart ->
