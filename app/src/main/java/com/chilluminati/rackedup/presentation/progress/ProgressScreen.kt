@@ -30,6 +30,7 @@ import com.chilluminati.rackedup.presentation.components.charts.ProgressionChart
 import com.chilluminati.rackedup.presentation.components.charts.ExerciseVarietyChart
 import com.chilluminati.rackedup.presentation.components.QuickStatCard
 import com.chilluminati.rackedup.presentation.components.VolumeBasedPersonalRecordsCard
+import com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord
 import com.chilluminati.rackedup.presentation.workouts.WorkoutsViewModel
 import com.chilluminati.rackedup.presentation.progress.BodyMeasurementScreen
 import java.util.Date

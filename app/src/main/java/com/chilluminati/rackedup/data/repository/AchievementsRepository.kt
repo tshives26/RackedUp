@@ -72,13 +72,13 @@ class AchievementsRepository @Inject constructor(
             )
         ) { values ->
             val workouts = values[0] as List<Workout>
-            val prs = values[1] as List<*>
+            val prs = values[1] as List<PersonalRecord>
             val programs = values[2] as List<Program>
             val exercises = values[3] as List<Exercise>
             val bodyMeasurements = values[4] as List<BodyMeasurement>
             val workoutExercises = values[5] as List<com.chilluminati.rackedup.data.database.entity.WorkoutExercise>
             val exerciseSets = values[6] as List<ExerciseSet>
-            computeStates(workouts, prs.map { (it as PersonalRecord).achievedAt }, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets)
+            computeStates(workouts, prs.map { it.achievedAt }, programs, exercises, bodyMeasurements, workoutExercises, exerciseSets)
         }
     }
 

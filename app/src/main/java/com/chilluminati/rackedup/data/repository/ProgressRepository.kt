@@ -153,8 +153,7 @@ class ProgressRepository @Inject constructor(
      */
     suspend fun initializeVolumePRsFromHistory() {
         withContext(ioDispatcher) {
-            // Get all completed workouts and their exercise sets
-            val workouts = workoutDao.getAllWorkoutsList().filter { it.isCompleted }
+            // Get exercise sets, workout exercises, and exercises for volume PR calculation
             val exerciseSets = exerciseSetDao.getAllExerciseSets()
             val workoutExercises = workoutExerciseDao.getAllWorkoutExercises()
             val exercises = exerciseDao.getAllExercisesList()
@@ -240,7 +239,7 @@ class ProgressRepository @Inject constructor(
                                     achievedAt = set.createdAt,
                                     previousValue = existingPR?.volume,
                                     improvement = if (existingPR != null && existingPR.volume != null) {
-                                        ((volume - existingPR.volume!!) / existingPR.volume!!) * 100
+                                        ((volume - existingPR.volume) / existingPR.volume) * 100
                                     } else null
                                 )
                                 
