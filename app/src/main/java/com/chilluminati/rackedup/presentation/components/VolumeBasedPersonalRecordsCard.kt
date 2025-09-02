@@ -302,26 +302,41 @@ private fun AllRecordsDialog(
                             }
                         }
                     } else {
+                        // Create a flat list with category headers and record items
+                        val items = mutableListOf<Any>()
                         recordsByCategory.forEach { (category, records) ->
-                            item {
-                                Text(
-                                    text = category.replaceFirstChar { it.uppercase() },
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            items.add(category) // Add category as header
+                            items.addAll(records) // Add all records in this category
+                            items.add("spacer") // Add spacer
+                        }
+                        
+                        items(items, key = { item ->
+                            when (item) {
+                                is String -> "category_$item"
+                                is VolumeBasedPersonalRecord -> "record_${item.exerciseId}_${item.achievedAt.time}"
+                                else -> item.hashCode().toString()
                             }
-                            
-                            items(records) { record ->
-                                PersonalRecordItem(
-                                    record = record,
-                                    dateFormat = dateFormat,
-                                    weightUnit = weightUnit
-                                )
-                            }
-                            
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
+                        }) { item ->
+                            when (item) {
+                                is String -> {
+                                    if (item == "spacer") {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    } else {
+                                        Text(
+                                            text = item.replaceFirstChar { it.uppercase() },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                is VolumeBasedPersonalRecord -> {
+                                    PersonalRecordItem(
+                                        record = item,
+                                        dateFormat = dateFormat,
+                                        weightUnit = weightUnit
+                                    )
+                                }
                             }
                         }
                     }
