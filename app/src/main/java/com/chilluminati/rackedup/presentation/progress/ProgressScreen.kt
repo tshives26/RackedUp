@@ -392,25 +392,25 @@ private fun ProgressHeader(
                 }
                 HorizontalPager(
                     state = pagerState
-                ) { page ->
-                    when (page) {
-                        0 -> ThisWeekSection(weeklyStats, currentStreak)
-                        1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
-                    }
-                }
+                                 ) { page ->
+                     when (page) {
+                         0 -> ThisWeekSection(weeklyStats, currentStreak, weightUnit)
+                         1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
+                     }
+                 }
             }
         }
     }
 }
 
 @Composable
-private fun ThisWeekSection(weeklyStats: WeeklyStats, currentStreak: Int) {
+private fun ThisWeekSection(weeklyStats: WeeklyStats, currentStreak: Int, weightUnit: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         WeeklyStatItem("Workouts", "${weeklyStats.workoutCount}", "total")
-        WeeklyStatItem("Vol", "${(weeklyStats.totalVolume).formatCompact()}", "kg")
+        WeeklyStatItem("Vol", "${(weeklyStats.totalVolume).formatCompact()}", weightUnit)
         WeeklyStatItem("Sets", "${weeklyStats.totalSets}", "total")
         WeeklyStatItem("Streak", "$currentStreak", "total")
     }
