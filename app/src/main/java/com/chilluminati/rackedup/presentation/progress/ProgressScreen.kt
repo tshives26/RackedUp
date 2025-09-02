@@ -1,6 +1,7 @@
 package com.chilluminati.rackedup.presentation.progress
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.lazy.LazyColumn
@@ -324,7 +325,7 @@ private fun ProgressHeader(
         backgroundAlpha = 0.15f
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(24.dp)
         ) {
             // Section selector with swipe indicator
             Row(
@@ -408,10 +409,10 @@ private fun ThisWeekSection(weeklyStats: WeeklyStats, currentStreak: Int) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        WeeklyStatItem("Workouts", "${weeklyStats.workoutCount}", "this week")
-        WeeklyStatItem("Volume", "${(weeklyStats.totalVolume).formatCompact()}", "kg")
-        WeeklyStatItem("Sets", "${weeklyStats.totalSets}", "this week")
-        WeeklyStatItem("Streak", "$currentStreak", "days")
+        WeeklyStatItem("Workouts", "${weeklyStats.workoutCount}", "total")
+        WeeklyStatItem("Vol", "${(weeklyStats.totalVolume).formatCompact()}", "kg")
+        WeeklyStatItem("Sets", "${weeklyStats.totalSets}", "total")
+        WeeklyStatItem("Streak", "$currentStreak", "total")
     }
 }
 
@@ -435,9 +436,9 @@ private fun LifetimeSection(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             WeeklyStatItem("Workouts", "${lifetimeStats.totalWorkouts}", "total")
-            WeeklyStatItem("Volume", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit)
+            WeeklyStatItem("Vol", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit)
             WeeklyStatItem("Sets", "${lifetimeStats.totalSets}", "total")
-            WeeklyStatItem("Days", "${lifetimeStats.daysSinceFirst}", "active")
+            WeeklyStatItem("Days", "${lifetimeStats.daysSinceFirst}", "total")
         }
         
         Spacer(modifier = Modifier.height(12.dp))
@@ -448,32 +449,39 @@ private fun LifetimeSection(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             WeeklyStatItem("Avg Vol", "${lifetimeStats.averageVolumePerWorkout.toInt()}", weightUnit)
-            WeeklyStatItem("Avg Sets", "${lifetimeStats.averageSetsPerWorkout.toInt()}", "per workout")
-            WeeklyStatItem("Per Week", "${String.format("%.1f", lifetimeStats.workoutsPerWeek)}", "workouts")
-            WeeklyStatItem("PRs", "$totalPRs", "records")
+            WeeklyStatItem("Avg Sets", "${lifetimeStats.averageSetsPerWorkout.toInt()}", "avg")
+            WeeklyStatItem("Weekly", "${String.format("%.1f", lifetimeStats.workoutsPerWeek)}", "avg")
+            WeeklyStatItem("PRs", "$totalPRs", "total")
         }
     }
 }
 
 @Composable
 private fun WeeklyStatItem(label: String, value: String, unit: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
         )
         if (unit.isNotBlank()) {
             Text(
                 text = unit,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }
