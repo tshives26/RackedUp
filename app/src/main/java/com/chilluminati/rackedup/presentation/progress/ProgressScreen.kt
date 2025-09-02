@@ -438,7 +438,7 @@ private fun LifetimeSection(
             WeeklyStatItem("Workouts", "${lifetimeStats.totalWorkouts}", "total")
             WeeklyStatItem("Vol", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit)
             WeeklyStatItem("Sets", "${lifetimeStats.totalSets}", "total")
-            WeeklyStatItem("Days", "${lifetimeStats.daysSinceFirst}", "total")
+            WeeklyStatItem("Longest", "${lifetimeStats.longestStreak}", "streak")
         }
         
         Spacer(modifier = Modifier.height(12.dp))

@@ -460,6 +460,9 @@ class ProgressViewModel @Inject constructor(
         val averageSetsPerWorkout = if (totalWorkouts > 0) totalSets.toDouble() / totalWorkouts else 0.0
         val workoutsPerWeek = if (daysSinceFirst > 0) (totalWorkouts.toDouble() / daysSinceFirst) * 7 else 0.0
         
+        // Calculate longest streak
+        val (_, longestStreak) = computeStreaks(workouts)
+        
         return LifetimeStats(
             totalWorkouts = totalWorkouts,
             totalVolume = totalVolume,
@@ -468,6 +471,7 @@ class ProgressViewModel @Inject constructor(
             averageDuration = averageDuration,
             firstWorkout = firstWorkout,
             daysSinceFirst = daysSinceFirst,
+            longestStreak = longestStreak,
             averageVolumePerWorkout = averageVolumePerWorkout,
             averageSetsPerWorkout = averageSetsPerWorkout,
             workoutsPerWeek = workoutsPerWeek
@@ -614,6 +618,7 @@ data class LifetimeStats(
     val averageDuration: Int = 0,
     val firstWorkout: Date = Date(),
     val daysSinceFirst: Int = 0,
+    val longestStreak: Int = 0,
     val averageVolumePerWorkout: Double = 0.0,
     val averageSetsPerWorkout: Double = 0.0,
     val workoutsPerWeek: Double = 0.0
