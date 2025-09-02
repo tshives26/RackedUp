@@ -6,16 +6,30 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chilluminati.rackedup.R
@@ -39,9 +53,76 @@ import java.util.Locale
 import com.chilluminati.rackedup.core.util.formatCompact
 import com.chilluminati.rackedup.presentation.components.GradientBackground
 import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
+import com.chilluminati.rackedup.presentation.progress.ProgressViewModel
+import com.chilluminati.rackedup.presentation.progress.WorkoutHistoryDisplay
+import com.chilluminati.rackedup.presentation.progress.WeeklyStats
+import com.chilluminati.rackedup.presentation.progress.MonthlyStats
+import com.chilluminati.rackedup.presentation.progress.LifetimeStats
 
 /**
  * Progress screen showing analytics, charts, and workout history
+ * 
+ * ADDITIONAL GRAPHS AND DATA POINTS TO CONSIDER:
+ * 
+ * 1. STRENGTH PROGRESSION CHARTS:
+ *    - 1RM progression over time for major lifts (Squat, Deadlift, Bench Press)
+ *    - Relative strength (weight lifted / body weight) trends
+ *    - Progressive overload visualization (weight increases over time)
+ *    - Deload week indicators and recovery patterns
+ * 
+ * 2. VOLUME AND INTENSITY ANALYSIS:
+ *    - Volume vs. intensity scatter plot
+ *    - Weekly/monthly volume distribution
+ *    - Rest day patterns and recovery metrics
+ *    - Workout frequency heatmap (calendar view)
+ * 
+ * 3. EXERCISE-SPECIFIC METRICS:
+ *    - Exercise frequency over time
+ *    - Set/rep progression for specific exercises
+ *    - Rest time trends between sets
+ *    - RPE (Rate of Perceived Exertion) tracking
+ * 
+ * 4. BODY COMPOSITION TRACKING:
+ *    - Weight trends with body fat percentage
+ *    - Body measurements progress (chest, arms, waist, etc.)
+ *    - Progress photos timeline
+ *    - BMI and body composition ratios
+ * 
+ * 5. PERFORMANCE METRICS:
+ *    - Workout duration trends
+ *    - Rest time between exercises
+ *    - Superset and circuit efficiency
+ *    - Cardio performance (if applicable)
+ * 
+ * 6. COMPARATIVE ANALYTICS:
+ *    - This week vs. last week comparison
+ *    - Monthly progress summaries
+ *    - Seasonal performance patterns
+ *    - Year-over-year progress
+ * 
+ * 7. GOAL TRACKING:
+ *    - Progress toward specific goals (weight, reps, etc.)
+ *    - Milestone achievements
+ *    - Streak tracking (consecutive workout days)
+ *    - Personal record celebrations
+ * 
+ * 8. RECOVERY AND WELLNESS:
+ *    - Sleep quality correlation with performance
+ *    - Nutrition impact on workout performance
+ *    - Stress levels and recovery metrics
+ *    - Injury prevention indicators
+ * 
+ * 9. SOCIAL AND COMPETITIVE:
+ *    - Leaderboard comparisons (if app supports social features)
+ *    - Challenge participation tracking
+ *    - Community benchmarks
+ *    - Achievement badges and milestones
+ * 
+ * 10. ADVANCED ANALYTICS:
+ *     - Machine learning-based progress predictions
+ *     - Optimal workout timing recommendations
+ *     - Plate detection and deload suggestions
+ *     - Personalized progression recommendations
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +184,7 @@ fun ProgressScreen(
     val exerciseVarietyData by viewModel.exerciseVarietyData.collectAsStateWithLifecycle()
     val muscleGroupVarietyData by viewModel.muscleGroupVarietyData.collectAsStateWithLifecycle()
     val volumeBasedPersonalRecords by viewModel.volumeBasedPersonalRecords.collectAsStateWithLifecycle()
+    val lifetimeStats by viewModel.lifetimeStats.collectAsStateWithLifecycle()
     
     // State for delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -123,11 +205,12 @@ fun ProgressScreen(
             universalStrengthData = universalStrengthData,
             volumeLoadData = volumeLoadData,
             workoutDensityData = workoutDensityData,
-            volumeBasedPersonalRecords = volumeBasedPersonalRecords
+            volumeBasedPersonalRecords = volumeBasedPersonalRecords,
+            lifetimeStats = lifetimeStats
         )
 
         // Tab layout
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
+        TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     text = { Text(title) },
@@ -224,11 +307,15 @@ private fun ProgressHeader(
     universalStrengthData: List<Pair<Date, Double>>,
     volumeLoadData: List<Pair<Date, Double>>,
     workoutDensityData: List<Pair<Date, Double>>,
-    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
+    lifetimeStats: com.chilluminati.rackedup.presentation.progress.LifetimeStats
 ) {
     val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty() || 
                   universalStrengthData.isNotEmpty() || volumeLoadData.isNotEmpty() || workoutDensityData.isNotEmpty() ||
                   volumeBasedPersonalRecords.isNotEmpty()
+    
+    var selectedSection by remember { mutableIntStateOf(0) }
+    val sections = remember { listOf("This Week", "Lifetime") }
     
     GlassmorphismCard(
         modifier = Modifier
@@ -239,20 +326,47 @@ private fun ProgressHeader(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = "This Week",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            // Section selector with swipe indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = sections[selectedSection],
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                // Swipe indicator
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    sections.forEachIndexed { index, _ ->
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(
+                                    color = if (index == selectedSection) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
             
             if (!hasData) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -270,16 +384,73 @@ private fun ProgressHeader(
                     )
                 }
             } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    WeeklyStatItem("Workouts", "${weeklyStats.workoutCount}", "this week")
-                    WeeklyStatItem("Volume", "${(weeklyStats.totalVolume).formatCompact()}", weightUnit)
-                    WeeklyStatItem("Sets", "${weeklyStats.totalSets}", "this week")
-                    WeeklyStatItem("Streak", "$currentStreak", "days")
+                // Swipeable content
+                val pagerState = rememberPagerState { sections.size }
+                LaunchedEffect(pagerState.currentPage) {
+                    selectedSection = pagerState.currentPage
+                }
+                HorizontalPager(
+                    state = pagerState
+                ) { page ->
+                    when (page) {
+                        0 -> ThisWeekSection(weeklyStats, currentStreak)
+                        1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ThisWeekSection(weeklyStats: WeeklyStats, currentStreak: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        WeeklyStatItem("Workouts", "${weeklyStats.workoutCount}", "this week")
+        WeeklyStatItem("Volume", "${(weeklyStats.totalVolume).formatCompact()}", "kg")
+        WeeklyStatItem("Sets", "${weeklyStats.totalSets}", "this week")
+        WeeklyStatItem("Streak", "$currentStreak", "days")
+    }
+}
+
+@Composable
+private fun LifetimeSection(
+    lifetimeStats: com.chilluminati.rackedup.presentation.progress.LifetimeStats,
+    volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
+    personalRecords: List<com.chilluminati.rackedup.data.database.entity.PersonalRecord>,
+    weightUnit: String
+) {
+    val totalPRs = personalRecords.size
+    val totalVolumePRs = volumeBasedPersonalRecords.size
+    val uniqueExercises = volumeBasedPersonalRecords.map { it.exerciseName }.distinct().size
+    
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Main lifetime stats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            WeeklyStatItem("Workouts", "${lifetimeStats.totalWorkouts}", "total")
+            WeeklyStatItem("Volume", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit)
+            WeeklyStatItem("Sets", "${lifetimeStats.totalSets}", "total")
+            WeeklyStatItem("Days", "${lifetimeStats.daysSinceFirst}", "active")
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Additional lifetime metrics
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            WeeklyStatItem("Avg Vol", "${lifetimeStats.averageVolumePerWorkout.toInt()}", weightUnit)
+            WeeklyStatItem("Avg Sets", "${lifetimeStats.averageSetsPerWorkout.toInt()}", "per workout")
+            WeeklyStatItem("Per Week", "${String.format("%.1f", lifetimeStats.workoutsPerWeek)}", "workouts")
+            WeeklyStatItem("PRs", "$totalPRs", "records")
         }
     }
 }
@@ -339,15 +510,6 @@ private fun OverviewTab(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        // Quick Stats (mirror Dashboard)
-        item {
-            Text(
-                text = "Quick Stats",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
         if (!hasData) {
             item {
                 FeaturePlaceholderCard(
@@ -355,38 +517,6 @@ private fun OverviewTab(
                     description = "Complete your first workout to start tracking your progress and see your statistics here.",
                     icon = Icons.AutoMirrored.Filled.TrendingUp
                 )
-            }
-        } else {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickStatCard(
-                        title = "Workouts",
-                        value = "${monthlyStats.workoutCount}",
-                        subtitle = "This month",
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickStatCard(
-                        title = "Workouts",
-                        value = "${weeklyStats.workoutCount}",
-                        subtitle = "This week",
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickStatCard(
-                        title = "Sets",
-                        value = "${weeklyStats.totalSets}",
-                        subtitle = "This week",
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickStatCard(
-                        title = "Volume",
-                        value = "${(weeklyStats.totalVolume).formatCompact()}",
-                        subtitle = "this week",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
             }
         }
 
@@ -452,6 +582,49 @@ private fun OverviewTab(
 
             item {
                 ConsistencyChart(data = consistencyData, modifier = Modifier, title = "Consistency (last 12 weeks)")
+            }
+            
+            // Advanced Analytics Section
+            item {
+                Text(
+                    text = "Advanced Analytics",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            item {
+                // Placeholder for future advanced charts
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                                                 Icon(
+                             imageVector = Icons.Default.TrendingUp,
+                             contentDescription = null,
+                             modifier = Modifier.size(32.dp),
+                             tint = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Advanced Analytics Coming Soon",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                                                 Text(
+                             text = "Future updates will include strength progression, body composition tracking, and personalized insights.",
+                             style = MaterialTheme.typography.bodyMedium,
+                             textAlign = TextAlign.Center,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                    }
+                }
             }
         }
 

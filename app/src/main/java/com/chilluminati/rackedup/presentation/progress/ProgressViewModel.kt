@@ -266,6 +266,21 @@ class ProgressViewModel @Inject constructor(
 
     private val _longestStreak = MutableStateFlow(0)
     val longestStreak: StateFlow<Int> = _longestStreak.asStateFlow()
+    
+    // Lifetime statistics
+    private val _lifetimeStats = MutableStateFlow(LifetimeStats())
+    val lifetimeStats: StateFlow<LifetimeStats> = _lifetimeStats.asStateFlow()
+    
+    // Exercise-specific lifetime stats
+    private val _exerciseLifetimeStats = MutableStateFlow<Map<String, ExerciseLifetimeStats>>(emptyMap())
+    val exerciseLifetimeStats: StateFlow<Map<String, ExerciseLifetimeStats>> = _exerciseLifetimeStats.asStateFlow()
+    
+    // Additional progress metrics
+    private val _strengthProgressionData = MutableStateFlow<Map<String, List<Pair<Date, Double>>>>(emptyMap())
+    val strengthProgressionData: StateFlow<Map<String, List<Pair<Date, Double>>>> = _strengthProgressionData.asStateFlow()
+    
+    private val _bodyCompositionData = MutableStateFlow<List<Pair<Date, Map<String, Double>>>>(emptyList())
+    val bodyCompositionData: StateFlow<List<Pair<Date, Map<String, Double>>>> = _bodyCompositionData.asStateFlow()
 
     private fun observeAggregateStats() {
         viewModelScope.launch {
@@ -279,6 +294,7 @@ class ProgressViewModel @Inject constructor(
         _weeklyStats.value = calculateWeeklyStats(workouts)
         _monthlyStats.value = calculateMonthlyStats(workouts)
         _totalAllTimeVolume.value = workouts.sumOf { it.totalVolume }
+        _lifetimeStats.value = calculateLifetimeStats(workouts)
         val (cur, longest) = computeStreaks(workouts)
         _currentStreak.value = cur
         _longestStreak.value = longest
@@ -418,6 +434,45 @@ class ProgressViewModel @Inject constructor(
         cal.set(Calendar.MILLISECOND, 0)
         return cal.time
     }
+    
+    private fun calculateLifetimeStats(workouts: List<Workout>): LifetimeStats {
+        if (workouts.isEmpty()) return LifetimeStats()
+        
+        val totalWorkouts = workouts.size
+        val totalVolume = workouts.sumOf { it.totalVolume }
+        val totalSets = workouts.sumOf { it.totalSets }
+        val totalDuration = workouts.mapNotNull { it.durationMinutes }.sum()
+        val averageDuration = if (workouts.isNotEmpty()) workouts.mapNotNull { it.durationMinutes }.average().toInt() else 0
+        
+        // Calculate first and last workout dates
+        val sortedWorkouts = workouts.sortedBy { it.date }
+        val firstWorkout = sortedWorkouts.first().date
+        val lastWorkout = sortedWorkouts.last().date
+        
+        // Calculate days since first workout
+        val calendar = Calendar.getInstance()
+        val today = calendar.time
+        calendar.time = firstWorkout
+        val daysSinceFirst = ((today.time - firstWorkout.time) / (1000 * 60 * 60 * 24)).toInt()
+        
+        // Calculate additional metrics
+        val averageVolumePerWorkout = if (totalWorkouts > 0) totalVolume / totalWorkouts else 0.0
+        val averageSetsPerWorkout = if (totalWorkouts > 0) totalSets.toDouble() / totalWorkouts else 0.0
+        val workoutsPerWeek = if (daysSinceFirst > 0) (totalWorkouts.toDouble() / daysSinceFirst) * 7 else 0.0
+        
+        return LifetimeStats(
+            totalWorkouts = totalWorkouts,
+            totalVolume = totalVolume,
+            totalSets = totalSets,
+            totalDuration = totalDuration,
+            averageDuration = averageDuration,
+            firstWorkout = firstWorkout,
+            daysSinceFirst = daysSinceFirst,
+            averageVolumePerWorkout = averageVolumePerWorkout,
+            averageSetsPerWorkout = averageSetsPerWorkout,
+            workoutsPerWeek = workoutsPerWeek
+        )
+    }
 
     fun refreshData() {
         loadProgressData()
@@ -549,4 +604,28 @@ data class WorkoutHistoryDisplay(
     val duration: String,
     val sets: String,
     val volume: Double
+)
+
+data class LifetimeStats(
+    val totalWorkouts: Int = 0,
+    val totalVolume: Double = 0.0,
+    val totalSets: Int = 0,
+    val totalDuration: Int = 0, // in minutes
+    val averageDuration: Int = 0,
+    val firstWorkout: Date = Date(),
+    val daysSinceFirst: Int = 0,
+    val averageVolumePerWorkout: Double = 0.0,
+    val averageSetsPerWorkout: Double = 0.0,
+    val workoutsPerWeek: Double = 0.0
+)
+
+data class ExerciseLifetimeStats(
+    val exerciseName: String,
+    val totalWorkouts: Int = 0,
+    val totalVolume: Double = 0.0,
+    val totalSets: Int = 0,
+    val personalRecord: Double = 0.0,
+    val lastPerformed: Date? = null,
+    val averageWeight: Double = 0.0,
+    val averageReps: Double = 0.0
 )
