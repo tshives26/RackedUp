@@ -47,7 +47,6 @@ import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 @Composable
 fun ProgressScreen(
     onNavigateToWorkoutDetail: (Long) -> Unit,
-    onNavigateToActiveWorkout: (Long) -> Unit,
     onEditWorkout: (Long) -> Unit = {},
     onDeleteWorkout: (Long) -> Unit = {},
     onNavigateToWorkoutEdit: (Long) -> Unit = {},
@@ -87,15 +86,11 @@ fun ProgressScreen(
     
     val volumeData by viewModel.volumeData.collectAsStateWithLifecycle()
     val strengthData by viewModel.strengthData.collectAsStateWithLifecycle()
-    val measurementData by viewModel.measurementData.collectAsStateWithLifecycle()
     val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
     val workoutHistoryDisplay by viewModel.workoutHistoryDisplay.collectAsStateWithLifecycle()
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
     val monthlyStats by viewModel.monthlyStats.collectAsStateWithLifecycle()
-    val totalAllTimeVolume by viewModel.totalAllTimeVolume.collectAsStateWithLifecycle()
     val currentStreak by viewModel.currentStreak.collectAsStateWithLifecycle()
-    val longestStreak by viewModel.longestStreak.collectAsStateWithLifecycle()
-    val achievements by viewModel.achievements.collectAsStateWithLifecycle()
     val consistencyData by viewModel.consistencyData.collectAsStateWithLifecycle()
     
     // Universal progress metrics
@@ -160,13 +155,10 @@ fun ProgressScreen(
                 weeklyProgressData = weeklyProgressData,
                 exerciseVarietyData = exerciseVarietyData,
                 muscleGroupVarietyData = muscleGroupVarietyData,
-                volumeBasedPersonalRecords = volumeBasedPersonalRecords,
-                onNavigateToPRs = onNavigateToPRs,
-                switchToPRsTab = switchToPRsTab
+                                 volumeBasedPersonalRecords = volumeBasedPersonalRecords,
+                 switchToPRsTab = switchToPRsTab
             )
-            1 -> BodyProgressTab(
-                measurementData = measurementData
-            )
+            1 -> BodyProgressTab()
             2 -> PersonalRecordsTab(
                 volumeBasedPersonalRecords = volumeBasedPersonalRecords,
                 weightUnit = weightUnit
@@ -334,7 +326,6 @@ private fun OverviewTab(
     exerciseVarietyData: List<Pair<Date, Int>>,
     muscleGroupVarietyData: List<Pair<Date, Int>>,
     volumeBasedPersonalRecords: List<com.chilluminati.rackedup.data.repository.VolumeBasedPersonalRecord>,
-    onNavigateToPRs: (() -> Unit)? = null,
     switchToPRsTab: () -> Unit
 ) {
     val hasData = volumeData.isNotEmpty() || strengthData.isNotEmpty() || personalRecords.isNotEmpty() || 
@@ -590,9 +581,7 @@ private fun PersonalRecordsTab(
 }
 
 @Composable
-private fun BodyProgressTab(
-    measurementData: List<Pair<Date, Map<String, Double>>>
-) {
+private fun BodyProgressTab() {
     BodyMeasurementScreen()
 }
 

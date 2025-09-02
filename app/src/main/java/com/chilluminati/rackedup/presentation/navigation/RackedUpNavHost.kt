@@ -96,9 +96,6 @@ fun RackedUpNavHost(
                 onNavigateToWorkoutDetail = { workoutId ->
                     navController.navigate(RackedUpDestination.WorkoutDetail.createRoute(workoutId))
                 },
-                onNavigateToActiveWorkout = { workoutId ->
-                    navController.navigate(RackedUpDestination.ActiveWorkout.createRoute(workoutId))
-                },
                 onNavigateToWorkoutEdit = { workoutId ->
                     navController.navigate(RackedUpDestination.WorkoutDetail.createRoute(workoutId, edit = true))
                 },
