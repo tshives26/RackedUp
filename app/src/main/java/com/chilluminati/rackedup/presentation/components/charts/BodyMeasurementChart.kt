@@ -49,7 +49,7 @@ fun BodyMeasurementChart(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(300.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -62,7 +62,7 @@ fun BodyMeasurementChart(
                 AndroidView(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(300.dp),
                     factory = { context ->
                         LineChart(context).apply {
                             // Configure chart appearance
@@ -94,7 +94,7 @@ fun BodyMeasurementChart(
                                 textColor = onSurfaceColor
                                 valueFormatter = object : ValueFormatter() {
                                     override fun getFormattedValue(value: Float): String {
-                                        return value.toString()
+                                        return "%.1f".format(value)
                                     }
                                 }
                             }
