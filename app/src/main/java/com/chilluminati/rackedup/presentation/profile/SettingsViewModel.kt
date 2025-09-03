@@ -44,6 +44,7 @@ class SettingsViewModel @Inject constructor(
         val autoBackup: Boolean = false,
         val weightUnit: String? = null,
         val distanceUnit: String? = null,
+        val measurementsUnit: String? = null,
         val isLoading: Boolean = false
     )
     
@@ -68,7 +69,8 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.autoBackup,
                 settingsRepository.defaultRestSeconds,
                 settingsRepository.weightUnit,
-                settingsRepository.distanceUnit
+                settingsRepository.distanceUnit,
+                settingsRepository.measurementsUnit
             ) { values ->
                 val themeMode = values[0] as SettingsRepository.ThemeMode
                 val dynamicColor = values[1] as Boolean
@@ -79,6 +81,7 @@ class SettingsViewModel @Inject constructor(
                 val defaultRestSeconds = values[6] as Int
                 val weightUnit = values[7] as String
                 val distanceUnit = values[8] as String
+                val measurementsUnit = values[9] as String
                 
                 SettingsUiState(
                     themeMode = themeMode,
@@ -90,6 +93,7 @@ class SettingsViewModel @Inject constructor(
                     autoBackup = autoBackup,
                     weightUnit = weightUnit,
                     distanceUnit = distanceUnit,
+                    measurementsUnit = measurementsUnit,
                     isLoading = false
                 )
             }.collect { state ->
@@ -238,6 +242,15 @@ class SettingsViewModel @Inject constructor(
     fun updateDistanceUnit(unit: String) {
         viewModelScope.launch {
             settingsRepository.setDistanceUnit(unit)
+        }
+    }
+    
+    /**
+     * Update measurements unit preference
+     */
+    fun updateMeasurementsUnit(unit: String) {
+        viewModelScope.launch {
+            settingsRepository.setMeasurementsUnit(unit)
         }
     }
     

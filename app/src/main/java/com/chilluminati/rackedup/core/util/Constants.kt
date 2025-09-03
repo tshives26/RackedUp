@@ -53,6 +53,7 @@ object Constants {
         const val VIBRATION_ENABLED = "vibration_enabled"
         const val WEIGHT_UNIT = "weight_unit"
         const val DISTANCE_UNIT = "distance_unit"
+        const val MEASUREMENTS_UNIT = "measurements_unit"
         const val DEFAULT_REST_SECONDS = "default_rest_seconds"
     }
 }

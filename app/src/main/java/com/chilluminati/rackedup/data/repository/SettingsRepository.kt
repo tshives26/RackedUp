@@ -236,6 +236,21 @@ class SettingsRepository @Inject constructor(
         }
     
     /**
+     * Get measurements unit preference as Flow
+     */
+    val measurementsUnit: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[measurementsUnitKey] ?: "in"
+        }
+    
+    /**
      * Set theme mode
      */
     suspend fun setThemeMode(themeMode: ThemeMode) = withContext(ioDispatcher) {
@@ -344,6 +359,15 @@ class SettingsRepository @Inject constructor(
         }
     }
     
+    /**
+     * Set measurements unit preference
+     */
+    suspend fun setMeasurementsUnit(unit: String) = withContext(ioDispatcher) {
+        dataStore.edit { preferences ->
+            preferences[measurementsUnitKey] = unit
+        }
+    }
+    
     companion object {
         private val themeModeKey = stringPreferencesKey(PreferenceKeys.THEME_MODE)
         private val dynamicColorKey = booleanPreferencesKey(PreferenceKeys.DYNAMIC_COLOR)
@@ -356,6 +380,7 @@ class SettingsRepository @Inject constructor(
         private val autoBackupIntervalKey = stringPreferencesKey(PreferenceKeys.AUTO_BACKUP_INTERVAL)
         private val weightUnitKey = stringPreferencesKey(PreferenceKeys.WEIGHT_UNIT)
         private val distanceUnitKey = stringPreferencesKey(PreferenceKeys.DISTANCE_UNIT)
+        private val measurementsUnitKey = stringPreferencesKey(PreferenceKeys.MEASUREMENTS_UNIT)
         private val defaultRestSecondsKey = intPreferencesKey(PreferenceKeys.DEFAULT_REST_SECONDS)
     }
 }

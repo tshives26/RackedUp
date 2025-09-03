@@ -71,6 +71,7 @@ fun SettingsScreen(
                 SettingsSection(title = "Units & Measurements") {
                     var showWeightUnitDialog by remember { mutableStateOf(false) }
                     var showDistanceUnitDialog by remember { mutableStateOf(false) }
+                    var showMeasurementsUnitDialog by remember { mutableStateOf(false) }
                     
                     SettingsClickableItem(
                         title = "Weight Unit",
@@ -84,6 +85,13 @@ fun SettingsScreen(
                         description = uiState.distanceUnit ?: "km",
                         icon = Icons.Default.Straighten,
                         onClick = { showDistanceUnitDialog = true }
+                    )
+                    
+                    SettingsClickableItem(
+                        title = "Measurements Unit",
+                        description = uiState.measurementsUnit ?: "in",
+                        icon = Icons.Default.Straighten,
+                        onClick = { showMeasurementsUnitDialog = true }
                     )
                     
                     if (showWeightUnitDialog) {
@@ -113,6 +121,21 @@ fun SettingsScreen(
                                 showDistanceUnitDialog = false
                             },
                             onDismiss = { showDistanceUnitDialog = false }
+                        )
+                    }
+                    
+                    if (showMeasurementsUnitDialog) {
+                        UnitSelectionDialog(
+                            title = "Measurements Unit",
+                            options = listOf("in", "cm"),
+                            currentSelection = uiState.measurementsUnit ?: "in",
+                            leadingIcon = Icons.Default.Straighten,
+                            subtitle = "Choose how body measurements are displayed",
+                            onSelectionChange = { unit ->
+                                viewModel.updateMeasurementsUnit(unit)
+                                showMeasurementsUnitDialog = false
+                            },
+                            onDismiss = { showMeasurementsUnitDialog = false }
                         )
                     }
                 }

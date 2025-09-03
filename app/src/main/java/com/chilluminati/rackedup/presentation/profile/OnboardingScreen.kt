@@ -184,6 +184,7 @@ fun OnboardingScreen(
                     ui = settingsUi,
                     onUpdateWeightUnit = settingsViewModel::updateWeightUnit,
                     onUpdateDistanceUnit = settingsViewModel::updateDistanceUnit,
+                    onUpdateMeasurementsUnit = settingsViewModel::updateMeasurementsUnit,
                     onUpdateThemeMode = settingsViewModel::updateThemeMode,
                     onUpdateDynamicColor = settingsViewModel::updateDynamicColor,
                     onUpdateColorTheme = settingsViewModel::updateColorTheme,
@@ -464,6 +465,7 @@ private fun OnboardingPreferences(
     ui: SettingsViewModel.SettingsUiState,
     onUpdateWeightUnit: (String) -> Unit,
     onUpdateDistanceUnit: (String) -> Unit,
+    onUpdateMeasurementsUnit: (String) -> Unit,
     onUpdateThemeMode: (com.chilluminati.rackedup.data.repository.SettingsRepository.ThemeMode) -> Unit,
     onUpdateDynamicColor: (Boolean) -> Unit,
     onUpdateColorTheme: (com.chilluminati.rackedup.data.repository.SettingsRepository.ColorTheme) -> Unit,
@@ -473,6 +475,7 @@ private fun OnboardingPreferences(
 ) {
     var showWeightUnitDialog by remember { mutableStateOf(false) }
     var showDistanceUnitDialog by remember { mutableStateOf(false) }
+    var showMeasurementsUnitDialog by remember { mutableStateOf(false) }
     var showColorThemeDialog by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -496,6 +499,12 @@ private fun OnboardingPreferences(
                     description = ui.distanceUnit ?: "miles",
                     icon = Icons.Default.Timeline,
                     onClick = { showDistanceUnitDialog = true }
+                )
+                SettingsClickableItem(
+                    title = "Measurements Unit",
+                    description = ui.measurementsUnit ?: "in",
+                    icon = Icons.Default.Straighten,
+                    onClick = { showMeasurementsUnitDialog = true }
                 )
             }
         }
@@ -550,6 +559,19 @@ private fun OnboardingPreferences(
                     showDistanceUnitDialog = false
                 },
                 onDismiss = { showDistanceUnitDialog = false }
+            )
+        }
+
+        if (showMeasurementsUnitDialog) {
+            UnitSelectionDialog(
+                title = "Measurements Unit",
+                options = listOf("in", "cm"),
+                currentSelection = ui.measurementsUnit ?: "in",
+                onSelectionChange = { unit ->
+                    onUpdateMeasurementsUnit(unit)
+                    showMeasurementsUnitDialog = false
+                },
+                onDismiss = { showMeasurementsUnitDialog = false }
             )
         }
 
