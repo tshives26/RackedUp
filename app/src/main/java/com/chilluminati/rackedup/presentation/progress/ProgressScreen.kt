@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chilluminati.rackedup.R
@@ -247,19 +249,19 @@ fun ProgressScreen(
                 volumeBasedPersonalRecords = volumeBasedPersonalRecords,
                 weightUnit = weightUnit
             )
-            3 -> HistoryTab(
-                items = workoutHistoryDisplay,
-                weightUnit = weightUnit,
-                onNavigateToWorkoutDetail = onNavigateToWorkoutDetail,
-                onEditWorkout = { workoutId ->
-                    // Navigate to workout detail screen for editing
-                    onNavigateToWorkoutEdit(workoutId)
-                },
-                onDeleteWorkout = { workoutId ->
-                    workoutToDelete = workoutId
-                    showDeleteDialog = true
-                }
-            )
+                         3 -> HistoryTab(
+                 workoutHistoryItems = workoutHistoryDisplay,
+                 weightUnit = weightUnit,
+                 onNavigateToWorkoutDetail = onNavigateToWorkoutDetail,
+                 onEditWorkout = { workoutId ->
+                     // Navigate to workout detail screen for editing
+                     onNavigateToWorkoutEdit(workoutId)
+                 },
+                 onDeleteWorkout = { workoutId ->
+                     workoutToDelete = workoutId
+                     showDeleteDialog = true
+                 }
+             )
         }
         
         // Delete confirmation dialog
@@ -427,31 +429,143 @@ private fun LifetimeSection(
     val totalVolumePRs = volumeBasedPersonalRecords.size
     val uniqueExercises = volumeBasedPersonalRecords.map { it.exerciseName }.distinct().size
     
+    ResponsiveLifetimeSection(
+        lifetimeStats = lifetimeStats,
+        totalPRs = totalPRs,
+        weightUnit = weightUnit
+    )
+}
+
+@Composable
+private fun ResponsiveLifetimeSection(
+    lifetimeStats: com.chilluminati.rackedup.presentation.progress.LifetimeStats,
+    totalPRs: Int,
+    weightUnit: String
+) {
+    // Define all metrics with their data
+    val metrics = listOf(
+        Triple("Workouts", "${lifetimeStats.totalWorkouts}", "total"),
+        Triple("Vol", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit),
+        Triple("Sets", "${lifetimeStats.totalSets}", "total"),
+        Triple("Longest", "${lifetimeStats.longestStreak}", "streak"),
+        Triple("Avg Vol", "${lifetimeStats.averageVolumePerWorkout.toInt()}", weightUnit),
+        Triple("Avg Sets", "${lifetimeStats.averageSetsPerWorkout.toInt()}", "avg"),
+        Triple("Weekly", "${String.format("%.1f", lifetimeStats.workoutsPerWeek)}", "avg"),
+        Triple("PRs", "$totalPRs", "total")
+    )
+    
+    // Calculate responsive grid parameters based on data length
+    val maxValueLength = metrics.maxOfOrNull { it.second.length } ?: 0
+    val columns = when {
+        maxValueLength > 10 -> 2  // Extremely long numbers (e.g., "12,345,678")
+        maxValueLength > 8 -> 2   // Very long numbers (e.g., "1,234,567")
+        maxValueLength > 6 -> 3   // Long numbers (e.g., "123,456")
+        else -> 4                 // Normal numbers
+    }
+    
+    // Group metrics into rows based on column count
+    val rows = metrics.chunked(columns)
+    
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(if (maxValueLength > 8) 8.dp else 12.dp)
     ) {
-        // Main lifetime stats
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            WeeklyStatItem("Workouts", "${lifetimeStats.totalWorkouts}", "total")
-            WeeklyStatItem("Vol", "${lifetimeStats.totalVolume.formatCompact()}", weightUnit)
-            WeeklyStatItem("Sets", "${lifetimeStats.totalSets}", "total")
-            WeeklyStatItem("Longest", "${lifetimeStats.longestStreak}", "streak")
+        rows.forEach { rowMetrics ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                rowMetrics.forEach { (label, value, unit) ->
+                    ResponsiveStatItem(
+                        label = label,
+                        value = value,
+                        unit = unit,
+                        maxValueLength = maxValueLength,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Fill remaining space if row is incomplete
+                repeat(columns - rowMetrics.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Additional lifetime metrics
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            WeeklyStatItem("Avg Vol", "${lifetimeStats.averageVolumePerWorkout.toInt()}", weightUnit)
-            WeeklyStatItem("Avg Sets", "${lifetimeStats.averageSetsPerWorkout.toInt()}", "avg")
-            WeeklyStatItem("Weekly", "${String.format("%.1f", lifetimeStats.workoutsPerWeek)}", "avg")
-            WeeklyStatItem("PRs", "$totalPRs", "total")
+    }
+}
+
+@Composable
+private fun ResponsiveStatItem(
+    label: String,
+    value: String,
+    unit: String,
+    maxValueLength: Int,
+    modifier: Modifier = Modifier
+) {
+    // Smart text scaling based on content length
+    val valueFontSize = when {
+        maxValueLength > 10 -> 12.sp   // Extremely long numbers
+        maxValueLength > 8 -> 14.sp    // Very long numbers
+        maxValueLength > 6 -> 16.sp    // Long numbers
+        else -> 18.sp                  // Normal numbers
+    }
+    
+    val labelFontSize = when {
+        maxValueLength > 10 -> 11.sp   // Very small label for extremely cramped space
+        maxValueLength > 8 -> 12.sp    // Small label for cramped space
+        maxValueLength > 6 -> 13.sp    // Medium label
+        else -> 14.sp                  // Normal label
+    }
+    
+    val unitFontSize = when {
+        maxValueLength > 10 -> 9.sp    // Very small unit for extremely cramped space
+        maxValueLength > 8 -> 10.sp    // Small unit for cramped space
+        maxValueLength > 6 -> 11.sp    // Medium unit
+        else -> 12.sp                  // Normal unit
+    }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(
+            horizontal = when {
+                maxValueLength > 10 -> 2.dp  // Very cramped space
+                maxValueLength > 8 -> 3.dp   // Cramped space
+                else -> 4.dp                 // Normal space
+            }
+        )
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontSize = valueFontSize
+            ),
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = labelFontSize
+            ),
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (unit.isNotBlank()) {
+            Text(
+                text = unit,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = unitFontSize
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -578,7 +692,7 @@ private fun OverviewTab(
                     densityData = workoutDensityData,
                     efficiencyData = workoutEfficiencyData,
                     modifier = Modifier,
-                    title = "Workout Efficiency",
+                    title = "Workout Density",
                     weightUnit = weightUnit
                 )
             }
@@ -699,6 +813,17 @@ private fun PersonalRecordsTab(
         filteredRecords.groupBy { it.exerciseCategory }
     }
     
+    // Create a flat list with category headers and record items
+    val itemList = remember(filteredRecords) {
+        val list = mutableListOf<Any>()
+        recordsByCategory.forEach { (category, records) ->
+            list.add(category) // Add category as header
+            list.addAll(records) // Add all records in this category
+            list.add("spacer") // Add spacer
+        }
+        list
+    }
+    
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -744,21 +869,7 @@ private fun PersonalRecordsTab(
                 )
             }
         } else {
-            // Create a flat list with category headers and record items
-            val items = mutableListOf<Any>()
-            recordsByCategory.forEach { (category, records) ->
-                items.add(category) // Add category as header
-                items.addAll(records) // Add all records in this category
-                items.add("spacer") // Add spacer
-            }
-            
-            items(items, key = { item ->
-                when (item) {
-                    is String -> "category_$item"
-                    is VolumeBasedPersonalRecord -> "record_${item.exerciseId}_${item.achievedAt.time}"
-                    else -> item.hashCode().toString()
-                }
-            }) { item ->
+            items(itemList) { item ->
                 when (item) {
                     is String -> {
                         if (item == "spacer") {
@@ -792,7 +903,7 @@ private fun BodyProgressTab() {
 
 @Composable
 private fun HistoryTab(
-    items: List<WorkoutHistoryDisplay>,
+    workoutHistoryItems: List<WorkoutHistoryDisplay>,
     weightUnit: String,
     onNavigateToWorkoutDetail: (Long) -> Unit,
     onEditWorkout: (Long) -> Unit = {},
@@ -819,7 +930,7 @@ private fun HistoryTab(
             }
         }
 
-        if (items.isEmpty()) {
+        if (workoutHistoryItems.isEmpty()) {
             item {
                 FeaturePlaceholderCard(
                     title = "No Workout History",
@@ -829,7 +940,7 @@ private fun HistoryTab(
             }
         } else {
             items(
-                items = items,
+                items = workoutHistoryItems,
                 key = { it.id },
                 contentType = { _ -> "history" }
             ) { item ->

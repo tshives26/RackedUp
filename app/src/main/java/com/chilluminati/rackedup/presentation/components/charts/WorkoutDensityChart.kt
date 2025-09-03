@@ -22,7 +22,7 @@ fun WorkoutDensityChart(
     densityData: List<Pair<Date, Double>>,
     efficiencyData: List<Pair<Date, Double>>,
     modifier: Modifier = Modifier,
-    title: String = "Workout Efficiency",
+    title: String = "Workout Density",
     weightUnit: String = "kg"
 ) {
     val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
@@ -55,7 +55,7 @@ fun WorkoutDensityChart(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Complete timed workouts to see efficiency metrics",
+                        text = "Complete timed workouts to see density metrics",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -124,23 +124,7 @@ fun WorkoutDensityChart(
                             dataSets.add(densityDataSet)
                         }
                         
-                        // Workout Efficiency line (sets per minute)
-                        if (efficiencyData.isNotEmpty()) {
-                            val efficiencyEntries = efficiencyData.mapIndexed { index, (_, value) ->
-                                Entry(index.toFloat(), value.toFloat())
-                            }
-                            
-                            val efficiencyDataSet = LineDataSet(efficiencyEntries, "Sets/min").apply {
-                                color = tertiaryColor
-                                setCircleColor(tertiaryColor)
-                                lineWidth = 2f
-                                circleRadius = 4f
-                                setDrawFilled(false)
-                                valueTextColor = onSurfaceColor
-                                setDrawValues(false)
-                            }
-                            dataSets.add(efficiencyDataSet)
-                        }
+
                         
                         chart.data = if (dataSets.isNotEmpty()) LineData(dataSets as List<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>) else null
                         chart.invalidate()
@@ -170,21 +154,7 @@ fun WorkoutDensityChart(
                             )
                         }
                     }
-                    if (efficiencyData.isNotEmpty()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Card(
-                                modifier = Modifier.size(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary
-                                )
-                            ) {}
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Sets/min",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
+
                 }
             }
         }
