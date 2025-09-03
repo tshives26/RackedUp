@@ -43,12 +43,7 @@ fun BodyMeasurementChart(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            // Title removed to give chart more space
 
             if (measurementData.isEmpty()) {
                 Box(
@@ -106,10 +101,9 @@ fun BodyMeasurementChart(
                             
                             axisRight.isEnabled = false
                             
-                            // Configure legend
+                            // Configure legend - disabled since it's obvious what the chart shows
                             legend.apply {
-                                isEnabled = true
-                                textColor = onSurfaceColor
+                                isEnabled = false
                             }
                         }
                     },
@@ -142,37 +136,7 @@ fun BodyMeasurementChart(
                 )
             }
             
-            // Legend for measurements
-            if (measurements.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    measurements.take(4).forEachIndexed { index, measurement ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Card(
-                                modifier = Modifier.size(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = when (index % 4) {
-                                        0 -> MaterialTheme.colorScheme.primary
-                                        1 -> MaterialTheme.colorScheme.secondary
-                                        2 -> MaterialTheme.colorScheme.tertiary
-                                        else -> MaterialTheme.colorScheme.error
-                                    }
-                                )
-                            ) {}
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = measurement,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-            }
+            // No custom legend needed - the chart's built-in legend is sufficient
         }
     }
 }

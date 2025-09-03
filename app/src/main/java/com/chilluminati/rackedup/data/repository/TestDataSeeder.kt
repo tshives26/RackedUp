@@ -13,6 +13,7 @@ import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
+import com.chilluminati.rackedup.core.util.toOneDecimalPlace
 
 /**
  * Utility class for seeding test data using existing workout templates
@@ -335,7 +336,7 @@ class TestDataSeeder @Inject constructor(
             
             // Add some weight variation and progression
             val weightVariation = Random.nextDouble(-2.5, 2.5)
-            val finalWeight = currentWeight + weightVariation
+            val finalWeight = (currentWeight + weightVariation).toOneDecimalPlace()
             
             val set = ExerciseSet(
                 workoutExerciseId = 0, // Will be set when workout exercise is created
@@ -351,7 +352,7 @@ class TestDataSeeder @Inject constructor(
             sets.add(set)
             
             // Slight weight increase for next set (drop sets)
-            currentWeight += Random.nextDouble(-5.0, 2.0)
+            currentWeight = (currentWeight + Random.nextDouble(-5.0, 2.0)).toOneDecimalPlace()
         }
         
         return sets
@@ -377,7 +378,7 @@ class TestDataSeeder @Inject constructor(
             // Weight measurement (slight weekly variation)
             val baseWeight = 75.0
             val weightVariation = Random.nextDouble(-0.5, 0.3) // Slight weight loss trend
-            val currentWeight = baseWeight + (week * weightVariation)
+            val currentWeight = (baseWeight + (week * weightVariation)).toOneDecimalPlace() // Round to 1 decimal place
             
             measurements.add(BodyMeasurement(
                 measurementType = "Weight",
@@ -393,7 +394,7 @@ class TestDataSeeder @Inject constructor(
             if (week % 2 == 0) { // Every other week
                 measurements.add(BodyMeasurement(
                     measurementType = "Chest",
-                    value = 95.0 + Random.nextDouble(-1.0, 1.0),
+                    value = (95.0 + Random.nextDouble(-1.0, 1.0)).toOneDecimalPlace(),
                     unit = "cm",
                     bodyPart = "Chest",
                     measurementMethod = "Tape",
@@ -403,7 +404,7 @@ class TestDataSeeder @Inject constructor(
                 
                 measurements.add(BodyMeasurement(
                     measurementType = "Arms",
-                    value = 32.0 + Random.nextDouble(-0.5, 0.5),
+                    value = (32.0 + Random.nextDouble(-0.5, 0.5)).toOneDecimalPlace(),
                     unit = "cm",
                     bodyPart = "Arms",
                     measurementMethod = "Tape",
@@ -413,7 +414,7 @@ class TestDataSeeder @Inject constructor(
                 
                 measurements.add(BodyMeasurement(
                     measurementType = "Waist",
-                    value = 80.0 + Random.nextDouble(-1.0, 1.0),
+                    value = (80.0 + Random.nextDouble(-1.0, 1.0)).toOneDecimalPlace(),
                     unit = "cm",
                     bodyPart = "Waist",
                     measurementMethod = "Tape",
