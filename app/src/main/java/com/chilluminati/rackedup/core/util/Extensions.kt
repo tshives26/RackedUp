@@ -1,7 +1,12 @@
 package com.chilluminati.rackedup.core.util
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.pow
@@ -128,4 +133,11 @@ inline fun <T> T?.ifNotNull(action: (T) -> Unit) {
 // Progress calculation
 fun calculateProgress(current: Double, target: Double): Float {
     return if (target > 0) (current / target).toFloat().coerceIn(0f, 1f) else 0f
+}
+
+// Keyboard handling extensions
+@Composable
+fun keyboardAsState(): State<Boolean> {
+    val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    return rememberUpdatedState(isImeVisible)
 }

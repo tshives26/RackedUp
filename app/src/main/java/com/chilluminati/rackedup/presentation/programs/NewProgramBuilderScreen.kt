@@ -40,6 +40,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -200,6 +203,7 @@ fun NewProgramBuilderScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
+            contentPadding = PaddingValues(bottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Program Info

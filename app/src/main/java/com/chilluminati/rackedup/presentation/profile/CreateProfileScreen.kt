@@ -2,6 +2,9 @@ package com.chilluminati.rackedup.presentation.profile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -117,7 +120,12 @@ fun CreateProfileScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 16.dp + WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+                ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Basic Information Section
