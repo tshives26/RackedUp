@@ -32,6 +32,10 @@ class ProgramsViewModel @Inject constructor(
     companion object {
         private const val MIN_DAYS = 1
         private const val MAX_DAYS = 7
+        
+        // Store the program ID that we're currently editing to survive navigation/state resets
+        // Using companion object to survive ViewModel recreation
+        private var currentEditingProgramId: Long? = null
     }
     
     private val _uiState = MutableStateFlow(ProgramsUiState())
@@ -271,6 +275,20 @@ class ProgramsViewModel @Inject constructor(
      * Start creating a new custom program
      */
     fun startNewProgram() {
+        Log.d("ProgramsViewModel", "startNewProgram: Called - this will reset builder state!")
+        
+        // CRITICAL FIX: Don't reset if we're currently editing a program
+        if (Companion.currentEditingProgramId != null) {
+            Log.d("ProgramsViewModel", "startNewProgram: BLOCKED - currently editing programId=${Companion.currentEditingProgramId}")
+            return
+        }
+        
+        val stackTrace = Thread.currentThread().stackTrace
+        Log.d("ProgramsViewModel", "startNewProgram: Stack trace:")
+        stackTrace.take(10).forEach { element ->
+            Log.d("ProgramsViewModel", "  at ${element.className}.${element.methodName}(${element.fileName}:${element.lineNumber})")
+        }
+        
         val initialDay = ProgramDay(
             id = nextTempDayId--,
             programId = 0,
@@ -288,6 +306,7 @@ class ProgramsViewModel @Inject constructor(
             durationEnabled = false,
             programDays = listOf(initialDay)
         )
+        Log.d("ProgramsViewModel", "startNewProgram: Builder state reset to new program")
     }
     
     /**
@@ -649,8 +668,9 @@ class ProgramsViewModel @Inject constructor(
                     }
                 }
                 
-                // Reset builder state
-                _builderState.value = ProgramBuilderState()
+                // Clear editing flag and mark as saved
+                Companion.currentEditingProgramId = null
+                _builderState.value = builderState.copy(saved = true)
                 
                 // Refresh programs list
                 loadPrograms()
@@ -698,7 +718,8 @@ class ProgramsViewModel @Inject constructor(
                     )
                 )
                 programRepository.saveProgramStructure(programId, snapshot.programDays, snapshot.programExercises)
-                _builderState.value = ProgramBuilderState()
+                Companion.currentEditingProgramId = null
+                _builderState.value = snapshot.copy(saved = true)
                 loadPrograms()
             } catch (e: Exception) {
                 _builderState.value = _builderState.value.copy(error = e.message ?: "Failed to save template")
@@ -710,7 +731,19 @@ class ProgramsViewModel @Inject constructor(
      * Cancel program building
      */
     fun cancelProgramBuilder() {
+        Log.d("ProgramsViewModel", "cancelProgramBuilder: Called - this will reset builder state!")
+        Companion.currentEditingProgramId = null
         _builderState.value = ProgramBuilderState()
+    }
+    
+    fun getCurrentEditingProgramId(): Long? = Companion.currentEditingProgramId
+    
+    fun restoreEditStateIfNeeded() {
+        val editId = Companion.currentEditingProgramId
+        if (editId != null && (_builderState.value.editingProgramId == null || _builderState.value.programName.isBlank())) {
+            Log.d("ProgramsViewModel", "restoreEditStateIfNeeded: Restoring edit state for programId=$editId")
+            beginEditProgram(editId)
+        }
     }
     
     /**
@@ -732,6 +765,10 @@ class ProgramsViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
         _builderState.value = _builderState.value.copy(error = null)
+    }
+
+    fun clearSaved() {
+        _builderState.value = _builderState.value.copy(saved = false)
     }
     
     fun refreshPrograms() {
@@ -778,18 +815,39 @@ class ProgramsViewModel @Inject constructor(
     }
 
     fun beginEditProgram(programId: Long) {
+        Log.d("ProgramsViewModel", "beginEditProgram: Starting edit for programId=$programId")
+        
+        // Store the editing program ID to survive navigation/resets
+        Companion.currentEditingProgramId = programId
+        
+        // Set editing state immediately to prevent race condition
+        _builderState.value = ProgramBuilderState(
+            isCreating = true,
+            editingProgramId = programId
+        )
+        Log.d("ProgramsViewModel", "beginEditProgram: Set initial editing state")
+        
         viewModelScope.launch(ioDispatcher) {
             try {
-                val program = programRepository.getProgramById(programId) ?: return@launch
+                Log.d("ProgramsViewModel", "beginEditProgram: Loading program data...")
+                val program = programRepository.getProgramById(programId)
+                if (program == null) {
+                    Log.e("ProgramsViewModel", "beginEditProgram: Program not found for id=$programId")
+                    return@launch
+                }
+                Log.d("ProgramsViewModel", "beginEditProgram: Loaded program: name='${program.name}', type='${program.programType}', difficulty='${program.difficultyLevel}'")
+                
                 val days = programRepository.getProgramDays(programId)
+                Log.d("ProgramsViewModel", "beginEditProgram: Loaded ${days.size} days: ${days.map { "Day ${it.dayNumber}: ${it.name}" }}")
 
                 val exercisesByDay: MutableMap<Long, List<ProgramExercise>> = mutableMapOf()
                 days.forEach { day ->
                     val ex = programRepository.getProgramExercises(day.id)
                     exercisesByDay[day.id] = ex
+                    Log.d("ProgramsViewModel", "beginEditProgram: Day ${day.dayNumber} has ${ex.size} exercises")
                 }
 
-                _builderState.value = ProgramBuilderState(
+                val finalState = ProgramBuilderState(
                     isCreating = true,
                     programName = program.name,
                     programDescription = program.description ?: "",
@@ -801,7 +859,13 @@ class ProgramsViewModel @Inject constructor(
                     programExercises = exercisesByDay,
                     editingProgramId = program.id
                 )
+                
+                Log.d("ProgramsViewModel", "beginEditProgram: Setting final state with name='${finalState.programName}', days=${finalState.programDays.size}")
+                _builderState.value = finalState
+                Log.d("ProgramsViewModel", "beginEditProgram: State updated successfully")
+                
             } catch (e: Exception) {
+                Log.e("ProgramsViewModel", "beginEditProgram: Error loading program", e)
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to load program for editing"
                 )
@@ -1063,5 +1127,6 @@ data class ProgramBuilderState(
     val programExercises: Map<Long, List<ProgramExercise>> = emptyMap(),
     // If not null, we're editing an existing program and should update/replace instead of creating
     val editingProgramId: Long? = null,
-    val error: String? = null
+    val error: String? = null,
+    val saved: Boolean = false
 )

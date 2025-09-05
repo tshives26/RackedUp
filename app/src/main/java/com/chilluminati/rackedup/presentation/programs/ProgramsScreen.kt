@@ -27,6 +27,7 @@ import com.chilluminati.rackedup.data.database.entity.ProgramExercise
 import com.chilluminati.rackedup.presentation.components.GradientBackground
 import com.chilluminati.rackedup.presentation.components.GlassmorphismCard
 import com.chilluminati.rackedup.presentation.components.BouncyButton
+import android.util.Log
 
 /**
  * Programs screen showing workout routines and program builder
@@ -47,7 +48,9 @@ fun ProgramsScreen(
 
     // Auto-navigate to builder when creating a new program
     LaunchedEffect(builderState.isCreating) {
+        Log.d("ProgramsScreen", "LaunchedEffect: isCreating=${builderState.isCreating}, editingId=${builderState.editingProgramId}")
         if (builderState.isCreating) {
+            Log.d("ProgramsScreen", "LaunchedEffect: Navigating to program builder")
             onNavigateToProgramBuilder()
         }
     }
@@ -261,7 +264,10 @@ private fun MyProgramsTab(
                     onStart = { onNavigateToSelectProgramDay(program.id) },
                     onPreview = { viewModel.loadProgramDetails(program.id) },
                     onSetActive = { viewModel.setActiveProgram(program) },
-                    onEdit = { viewModel.beginEditProgram(program.id) }
+                    onEdit = { 
+                        Log.d("ProgramsScreen", "Edit clicked for program: ${program.name} (id=${program.id})")
+                        viewModel.beginEditProgram(program.id) 
+                    }
                 )
             }
         }

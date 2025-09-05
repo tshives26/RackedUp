@@ -23,6 +23,8 @@ import com.chilluminati.rackedup.presentation.exercises.ExerciseCreateScreen
 import com.chilluminati.rackedup.presentation.workouts.ExerciseEditScreen
 import com.chilluminati.rackedup.presentation.profile.DataManagementScreen
 import com.chilluminati.rackedup.presentation.programs.NewProgramBuilderScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.chilluminati.rackedup.presentation.programs.ProgramsViewModel
 
 /**
  * Main navigation host for the RackedUp app
@@ -107,7 +109,7 @@ fun RackedUpNavHost(
             )
         }
 
-        composable(RackedUpDestination.Programs.route) {
+        composable(RackedUpDestination.Programs.route) { 
             ProgramsScreen(
                 onNavigateToActiveWorkout = { workoutId ->
                     if (workoutId != null) {
@@ -128,10 +130,9 @@ fun RackedUpNavHost(
         composable(RackedUpDestination.ProgramBuilder.route) {
             NewProgramBuilderScreen(
                 onNavigateBack = { 
-                    // Navigate to dashboard instead of popping back to avoid state issues
-                    navController.navigate(RackedUpDestination.Dashboard.route) {
-                        // Clear the back stack so user can't navigate back to the builder
-                        popUpTo(navController.graph.startDestinationId) {
+                    // Navigate specifically to Programs page to ensure proper destination
+                    navController.navigate(RackedUpDestination.Programs.route) {
+                        popUpTo(RackedUpDestination.Programs.route) {
                             inclusive = true
                         }
                     }

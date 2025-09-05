@@ -63,6 +63,20 @@ fun NewProgramBuilderScreen(
     val state by viewModel.builderState.collectAsState()
     val availableExercises by viewModel.availableExercises.collectAsState()
     val exerciseCategories by viewModel.exerciseCategories.collectAsState()
+    
+    // Debug logging
+    LaunchedEffect(state) {
+        Log.d("NewProgramBuilderScreen", "State changed: isCreating=${state.isCreating}, editingId=${state.editingProgramId}, name='${state.programName}', days=${state.programDays.size}")
+    }
+
+    // Handle successful save
+    LaunchedEffect(state.saved) {
+        if (state.saved) {
+            Log.d("NewProgramBuilderScreen", "Program saved successfully, navigating back")
+            viewModel.clearSaved()
+            onNavigateBack()
+        }
+    }
 
     // Clear error when user starts typing or making changes
     LaunchedEffect(state.programName, state.programType, state.programDays, state.programExercises) {
@@ -71,11 +85,53 @@ fun NewProgramBuilderScreen(
         }
     }
 
-    // Initialize with one day if program days is empty
+    // Handle edit program ID parameter - remove this for now
+    // LaunchedEffect(editProgramId) {
+    //     Log.d("NewProgramBuilderScreen", "LaunchedEffect(editProgramId): editProgramId=$editProgramId")
+    //     if (editProgramId != null) {
+    //         Log.d("NewProgramBuilderScreen", "LaunchedEffect(editProgramId): Loading edit data for programId=$editProgramId")
+    //         viewModel.beginEditProgram(editProgramId)
+    //     }
+    // }
+
+    // Initialize with one day if program days is empty and we're not editing
     LaunchedEffect(Unit) {
-        if (state.programDays.isEmpty()) {
+        Log.d("NewProgramBuilderScreen", "LaunchedEffect(Unit): programDays=${state.programDays.size}, editingId=${state.editingProgramId}")
+        
+        // First, try to restore edit state if it was lost during navigation
+        val currentEditId = viewModel.getCurrentEditingProgramId()
+        Log.d("NewProgramBuilderScreen", "LaunchedEffect(Unit): currentEditId=$currentEditId")
+        
+        if (currentEditId != null) {
+            Log.d("NewProgramBuilderScreen", "LaunchedEffect(Unit): Attempting to restore edit state")
+            viewModel.restoreEditStateIfNeeded()
+        } else if (state.programDays.isEmpty() && state.editingProgramId == null) {
+            Log.d("NewProgramBuilderScreen", "LaunchedEffect(Unit): Calling startNewProgram")
             viewModel.startNewProgram()
+        } else {
+            Log.d("NewProgramBuilderScreen", "LaunchedEffect(Unit): Not calling startNewProgram - already has data or editing")
         }
+    }
+
+    // Show loading state if we're editing but data hasn't loaded yet
+    if (state.editingProgramId != null && state.programName.isBlank() && state.programDays.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = "Loading program...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        return
     }
 
          
@@ -100,6 +156,7 @@ fun NewProgramBuilderScreen(
         if (hasUserData) {
             showExitConfirmation = true
         } else {
+            viewModel.cancelProgramBuilder()
             onNavigateBack()
         }
     }
@@ -230,8 +287,14 @@ fun NewProgramBuilderScreen(
                             }
                         }
                         HorizontalDivider()
-                        var name by remember { mutableStateOf(state.programName) }
-                        var description by remember { mutableStateOf(state.programDescription) }
+                        var name by remember(state.programName) { 
+                            Log.d("NewProgramBuilderScreen", "Name field updated: '${state.programName}'")
+                            mutableStateOf(state.programName) 
+                        }
+                        var description by remember(state.programDescription) { 
+                            Log.d("NewProgramBuilderScreen", "Description field updated: '${state.programDescription}'")
+                            mutableStateOf(state.programDescription) 
+                        }
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it; viewModel.updateProgramInfo(name, description, state.difficultyLevel, state.programType, state.durationWeeks, state.durationEnabled) },
@@ -295,7 +358,7 @@ fun NewProgramBuilderScreen(
                             )
                         }
                         if (state.durationEnabled) {
-                            var weeks by remember { mutableStateOf(state.durationWeeks) }
+                            var weeks by remember(state.durationWeeks) { mutableStateOf(state.durationWeeks) }
                             Slider(
                                 value = weeks.toFloat(),
                                 onValueChange = { v ->
@@ -371,7 +434,7 @@ fun NewProgramBuilderScreen(
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            var dayName by remember(day.id) { mutableStateOf(day.name) }
+                            var dayName by remember(day.id, day.name) { mutableStateOf(day.name) }
                             OutlinedTextField(
                                 value = dayName,
                                 onValueChange = { dayName = it; 
@@ -479,6 +542,7 @@ fun NewProgramBuilderScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        viewModel.cancelProgramBuilder()
                         onNavigateBack()
                         showExitConfirmation = false
                     }
@@ -660,9 +724,9 @@ private fun ExerciseRow(
     onPreview: (Long) -> Unit
 ) {
     val details = getExerciseById(exercise.exerciseId)
-    var sets by remember { mutableStateOf(exercise.sets) }
-    var reps by remember { mutableStateOf(exercise.reps ?: "10") }
-    var rest by remember { mutableStateOf(exercise.restTimeSeconds ?: 60) }
+    var sets by remember(exercise.sets) { mutableStateOf(exercise.sets) }
+    var reps by remember(exercise.reps) { mutableStateOf(exercise.reps ?: "10") }
+    var rest by remember(exercise.restTimeSeconds) { mutableStateOf(exercise.restTimeSeconds ?: 60) }
 
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(12.dp)) {
