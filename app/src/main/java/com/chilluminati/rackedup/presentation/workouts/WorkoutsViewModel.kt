@@ -76,6 +76,11 @@ class WorkoutsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(weightUnit = unit)
             }
         }
+        viewModelScope.launch(ioDispatcher) {
+            settingsRepository.distanceUnit.collect { unit ->
+                _uiState.value = _uiState.value.copy(distanceUnit = unit)
+            }
+        }
         // Collect default rest timer seconds so UI can use it when starting rest
         viewModelScope.launch(ioDispatcher) {
             settingsRepository.defaultRestSeconds.collect { seconds ->
@@ -548,6 +553,7 @@ data class WorkoutsUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val weightUnit: String = "lbs",
+    val distanceUnit: String = "miles",
     val defaultRestSeconds: Int = 120
 )
 

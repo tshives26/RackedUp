@@ -337,6 +337,7 @@ fun ActiveExerciseCard(
     exerciseDetails: Map<Long, Exercise>,
     isCompleted: Boolean,
     weightUnit: String,
+    distanceUnit: String,
     defaultRestSeconds: Int,
     onStartRest: (Int) -> Unit,
     onAddSet: (Double?, Int?, Int?) -> Unit,
@@ -472,6 +473,7 @@ fun ActiveExerciseCard(
                         reps = set.reps?.toString() ?: "",
                         isCompleted = set.isCompleted,
                         weightUnit = weightUnit,
+                        distanceUnit = distanceUnit,
                         defaultRestSeconds = defaultRestSeconds,
                         onComplete = {
                             onUpdateSet(set.copy(isCompleted = !set.isCompleted))
@@ -602,6 +604,7 @@ fun SetRow(
     reps: String,
     isCompleted: Boolean,
     weightUnit: String,
+    distanceUnit: String,
     defaultRestSeconds: Int,
     repScheme: String? = null,
     onComplete: () -> Unit,
@@ -933,7 +936,7 @@ fun SetRow(
                                     }
                                 },
                                 weightUnit = weightUnit,
-                                distanceUnit = "km"
+                                distanceUnit = distanceUnit
                             )
                         }
                     }

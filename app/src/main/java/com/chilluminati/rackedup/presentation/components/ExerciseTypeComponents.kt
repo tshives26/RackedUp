@@ -100,7 +100,7 @@ fun ExerciseTypeInputFields(
     inputData: ExerciseInputData,
     onInputChange: (ExerciseInputData) -> Unit,
     weightUnit: String = "lbs",
-    distanceUnit: String = "km",
+    distanceUnit: String = "miles",
     modifier: Modifier = Modifier,
     isReadOnly: Boolean = false
 ) {

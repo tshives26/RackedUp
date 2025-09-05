@@ -506,7 +506,8 @@ fun NewProgramBuilderScreen(
                                         onMoveDown = { viewModel.moveExerciseWithinDay(dayIndex, exIndex, exIndex + 1) },
                                         onRemove = { viewModel.removeExerciseFromProgramDay(dayIndex, exIndex) },
                                         onUpdate = { sets, reps, rest -> viewModel.updateExerciseConfiguration(dayIndex, exIndex, sets, reps, rest) },
-                                        onPreview = { previewExerciseId = it }
+                                        onPreview = { previewExerciseId = it },
+                                        distanceUnit = state.distanceUnit
                                     )
                                 }
                             }
@@ -725,7 +726,8 @@ private fun ExerciseRow(
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
     onUpdate: (String, String, Int) -> Unit,
-    onPreview: (Long) -> Unit
+    onPreview: (Long) -> Unit,
+    distanceUnit: String
 ) {
     val details = getExerciseById(exercise.exerciseId)
     var sets by remember(exercise.sets) { mutableStateOf(exercise.sets) }
@@ -905,7 +907,7 @@ private fun ExerciseRow(
                                     onUpdate("1", "1", rest)
                                 },
                                 weightUnit = "lbs", // This won't be used for cardio
-                                distanceUnit = "km",
+                                distanceUnit = distanceUnit,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.chilluminati.rackedup.data.repository.ProgramRepository
 import com.chilluminati.rackedup.data.repository.WorkoutRepository
 import com.chilluminati.rackedup.data.repository.ExerciseRepository
+import com.chilluminati.rackedup.data.repository.SettingsRepository
 import com.chilluminati.rackedup.data.database.entity.Program
 import com.chilluminati.rackedup.data.database.entity.ProgramDay
 import com.chilluminati.rackedup.data.database.entity.ProgramExercise
@@ -27,6 +28,7 @@ class ProgramsViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val settingsRepository: SettingsRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     companion object {
@@ -58,6 +60,7 @@ class ProgramsViewModel @Inject constructor(
     init {
         loadPrograms()
         loadExercises()
+        loadSettings()
     }
     
     private fun loadPrograms() {
@@ -130,6 +133,14 @@ class ProgramsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to load exercises"
                 )
+            }
+        }
+    }
+    
+    private fun loadSettings() {
+        viewModelScope.launch(ioDispatcher) {
+            settingsRepository.distanceUnit.collect { unit ->
+                _builderState.value = _builderState.value.copy(distanceUnit = unit)
             }
         }
     }
@@ -1175,5 +1186,6 @@ data class ProgramBuilderState(
     // If not null, we're editing an existing program and should update/replace instead of creating
     val editingProgramId: Long? = null,
     val error: String? = null,
-    val saved: Boolean = false
+    val saved: Boolean = false,
+    val distanceUnit: String = "miles"
 )

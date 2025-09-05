@@ -64,6 +64,7 @@ fun ActiveWorkoutScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val weightUnit = uiState.weightUnit
+    val distanceUnit = uiState.distanceUnit
     val activeWorkoutState by viewModel.activeWorkoutState.collectAsStateWithLifecycle()
     
     // Timer states (restore from persisted session if present)
@@ -340,6 +341,7 @@ fun ActiveWorkoutScreen(
                     exerciseDetails = activeWorkoutState.exerciseDetails,
                     isCompleted = false, // TODO: Determine completion logic
                     weightUnit = weightUnit,
+                    distanceUnit = distanceUnit,
                     defaultRestSeconds = uiState.defaultRestSeconds,
                                     onStartRest = { restTimeSeconds: Int ->
                     if (restTimeSeconds > 0) {
@@ -747,6 +749,7 @@ fun ActiveExerciseCard(
                         reps = set.reps?.toString() ?: "",
                         isCompleted = set.isCompleted,
                         weightUnit = weightUnit,
+                        distanceUnit = distanceUnit,
                         defaultRestSeconds = defaultRestSeconds,
                         repScheme = workoutExercise.repScheme,
 
