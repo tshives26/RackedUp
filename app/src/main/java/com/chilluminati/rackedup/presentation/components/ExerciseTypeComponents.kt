@@ -264,23 +264,6 @@ private fun CardioExerciseInputs(
                 colors = AppTextFieldDefaults.outlinedColors()
             )
         }
-        
-        // Pace input (for speed tracking)
-        OutlinedTextField(
-            value = inputData.pace,
-            onValueChange = { value ->
-                // Allow format like "5:30" for pace
-                val filtered = value.filter { it.isDigit() || it == ':' }
-                onInputChange(inputData.copy(pace = filtered))
-            },
-            label = { Text("Pace (min/$distanceUnit)") },
-            placeholder = { Text("5:30") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            readOnly = isReadOnly,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            colors = AppTextFieldDefaults.outlinedColors()
-        )
     }
 }
 
@@ -471,8 +454,7 @@ fun ExerciseInputData.toDatabaseValues(exerciseType: String): Map<String, Any?> 
                                      (durationSeconds.toIntOrNull() ?: 0)
             mapOf(
                 "distance" to distance.toDoubleOrNull(),
-                "duration_seconds" to if (totalDurationSeconds > 0) totalDurationSeconds else null,
-                "pace" to pace.takeIf { it.isNotBlank() }
+                "duration_seconds" to if (totalDurationSeconds > 0) totalDurationSeconds else null
             )
         }
         "plyometrics" -> mapOf(
@@ -513,8 +495,7 @@ object ExerciseInputDataFactory {
         reps: Int? = null,
         sets: Int? = null,
         distance: Double? = null,
-        durationSeconds: Int? = null,
-        pace: String? = null
+        durationSeconds: Int? = null
     ): ExerciseInputData {
         return when (exerciseType.lowercase()) {
             "strength", "resistance", "weight training" -> ExerciseInputData(
@@ -528,8 +509,7 @@ object ExerciseInputDataFactory {
                 ExerciseInputData(
                     distance = distance?.toString() ?: "",
                     durationMinutes = if (minutes > 0) minutes.toString() else "",
-                    durationSeconds = if (seconds > 0) seconds.toString() else "",
-                    pace = pace ?: ""
+                    durationSeconds = if (seconds > 0) seconds.toString() else ""
                 )
             }
             "plyometrics" -> ExerciseInputData(
