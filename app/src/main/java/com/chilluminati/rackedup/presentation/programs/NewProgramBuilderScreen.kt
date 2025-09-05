@@ -891,12 +891,6 @@ private fun ExerciseRow(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "Cardio - Distance, Duration & Pace",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
                             ExerciseTypeInputFields(
                                 exercise = exerciseDetails,
                                 inputData = inputData,
@@ -917,12 +911,6 @@ private fun ExerciseRow(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "Plyometric - Explosive Reps & Sets",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
                             ExerciseTypeInputFields(
                                 exercise = exerciseDetails,
                                 inputData = inputData,
@@ -942,12 +930,6 @@ private fun ExerciseRow(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "Isometric - Hold Duration",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
                             ExerciseTypeInputFields(
                                 exercise = exerciseDetails,
                                 inputData = inputData,
@@ -967,12 +949,6 @@ private fun ExerciseRow(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "Stretching - Duration",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            
                             ExerciseTypeInputFields(
                                 exercise = exerciseDetails,
                                 inputData = inputData,
