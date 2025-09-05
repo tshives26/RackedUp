@@ -251,7 +251,7 @@ private fun CardContent(
                         colors = AssistChipDefaults.assistChipColors(containerColor = outlineAlpha)
                     )
                     if (repsSummary != null) {
-                        val repsLabel = repsSummary.toIntOrNull()?.let { formatCount(it, "rep") } ?: "varied reps"
+                        val repsLabel = repsSummary.toIntOrNull()?.let { formatCount(it, "rep") } ?: "Varied Reps"
                         AssistChip(
                             onClick = {},
                             label = { Text(repsLabel) },
