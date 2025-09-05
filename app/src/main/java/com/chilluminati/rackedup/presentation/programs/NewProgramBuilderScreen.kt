@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.MenuAnchorType
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.draw.scale
 import coil.compose.AsyncImage
  import com.chilluminati.rackedup.presentation.components.FullScreenImageDialog
  import com.chilluminati.rackedup.data.database.entity.Exercise
@@ -758,68 +759,138 @@ private fun ExerciseRow(
         )
     }
 
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(Modifier.padding(12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Main row with arrows on left, image, exercise info, till failure toggle, and delete
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Move/reorder arrows (left side)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(end = 6.dp)
+                ) {
+                    IconButton(
+                        onClick = onMoveUp,
+                        modifier = Modifier.size(32.dp)
+                    ) { 
+                        Icon(
+                            Icons.Filled.ArrowUpward,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onMoveDown,
+                        modifier = Modifier.size(32.dp)
+                    ) { 
+                        Icon(
+                            Icons.Filled.ArrowDownward,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Exercise image
                 if (!details?.imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = details?.imageUrl,
                         contentDescription = details?.name,
-                        modifier = Modifier.size(40.dp).clickable { onPreview(exercise.exerciseId) }
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable { onPreview(exercise.exerciseId) }
                     )
+                    Spacer(Modifier.width(12.dp))
                 }
+                
+                // Exercise info
                 val subtitle = (details?.category ?: "").replaceFirstChar { ch ->
                     if (ch.isLowerCase()) ch.titlecase(java.util.Locale.getDefault()) else ch.toString()
                 }
                 Column(
                     Modifier
                         .weight(1f)
-                        .padding(horizontal = 12.dp)
                         .clickable { onPreview(exercise.exerciseId) }
                 ) {
-                    Text(details?.name ?: "Exercise ${exercise.exerciseId}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = details?.name ?: "Exercise ${exercise.exerciseId}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = onMoveUp) { Icon(Icons.Filled.ArrowUpward, contentDescription = null) }
-                    IconButton(onClick = onMoveDown) { Icon(Icons.Filled.ArrowDownward, contentDescription = null) }
-                }
-                IconButton(onClick = onRemove) { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
-            }
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Exercise type-specific inputs
+                
+                // Till Failure toggle (for strength exercises only)
                 details?.let { exerciseDetails ->
-                    // Debug: Log the exercise type and category
-                    Log.d("ExerciseRow", "Exercise: ${exerciseDetails.name}, Type: '${exerciseDetails.exerciseType}', Category: '${exerciseDetails.category}'")
-                    
-                    // Determine exercise type using helper function
                     val effectiveType = determineEffectiveExerciseType(exerciseDetails)
-                    
-                    Log.d("ExerciseRow", "Effective type determined: '$effectiveType'")
-                    
-                    when (effectiveType) {
-                        "strength", "resistance", "weight training" -> {
-                            // Till Failure toggle for strength exercises
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Till Failure", style = MaterialTheme.typography.titleSmall)
-                                Switch(
-                                    checked = exercise.tillFailure,
-                                    onCheckedChange = { checked ->
-                                        if (checked) {
-                                            onUpdate(sets, "Till Failure", rest)
-                                        } else {
-                                            onUpdate(sets, "10", rest)
-                                        }
+                    if (effectiveType in listOf("strength", "resistance", "weight training")) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp)
+                        ) {
+                            Text(
+                                text = "Failure",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Switch(
+                                checked = exercise.tillFailure,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        onUpdate(sets, "Till Failure", rest)
+                                    } else {
+                                        onUpdate(sets, "10", rest)
                                     }
-                                )
-                            }
-                            
-                            // Sets input for strength exercises
+                                },
+                                modifier = Modifier.scale(0.8f)
+                            )
+                        }
+                    }
+                }
+                
+                // Delete button
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(36.dp)
+                ) { 
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            
+            // Exercise type-specific inputs (more compact)
+            details?.let { exerciseDetails ->
+                // Debug: Log the exercise type and category
+                Log.d("ExerciseRow", "Exercise: ${exerciseDetails.name}, Type: '${exerciseDetails.exerciseType}', Category: '${exerciseDetails.category}'")
+                
+                // Determine exercise type using helper function
+                val effectiveType = determineEffectiveExerciseType(exerciseDetails)
+                
+                Log.d("ExerciseRow", "Effective type determined: '$effectiveType'")
+                
+                when (effectiveType) {
+                    "strength", "resistance", "weight training" -> {
+                        // Sets and Reps side by side for strength exercises
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             OutlinedTextField(
                                 value = sets,
                                 onValueChange = { newValue ->
@@ -828,15 +899,13 @@ private fun ExerciseRow(
                                     inputData = inputData.copy(sets = filtered)
                                     onUpdate(filtered, reps, rest)
                                 },
-                                label = { Text("Sets") },
-                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Sets", style = MaterialTheme.typography.bodyMedium) },
+                                modifier = Modifier.weight(1f),
                                 colors = AppTextFieldDefaults.outlinedColors(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.bodyLarge
                             )
                             
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Reps input for strength exercises
                             OutlinedTextField(
                                 value = if (exercise.tillFailure) "Failure" else reps,
                                 onValueChange = { newValue ->
@@ -847,20 +916,25 @@ private fun ExerciseRow(
                                         onUpdate(sets, filtered, rest)
                                     }
                                 },
-                                label = { Text("Reps") },
-                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Reps", style = MaterialTheme.typography.bodyMedium) },
+                                modifier = Modifier.weight(1f),
                                 colors = AppTextFieldDefaults.outlinedColors(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 enabled = !exercise.tillFailure,
-                                readOnly = exercise.tillFailure
+                                readOnly = exercise.tillFailure,
+                                textStyle = MaterialTheme.typography.bodyLarge
                             )
                         }
-                        "cardio", "cardiovascular", "aerobic", "endurance" -> {
+                    }
+                    "cardio", "cardiovascular", "aerobic", "endurance" -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
-                                text = "Cardio Exercise - Track Distance, Duration & Pace",
+                                text = "Cardio - Distance, Duration & Pace",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth()
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             ExerciseTypeInputFields(
@@ -877,12 +951,16 @@ private fun ExerciseRow(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        "plyometrics" -> {
+                    }
+                    "plyometrics" -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
-                                text = "Plyometric Exercise - Track Explosive Reps & Sets",
+                                text = "Plyometric - Explosive Reps & Sets",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth()
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             ExerciseTypeInputFields(
@@ -898,12 +976,16 @@ private fun ExerciseRow(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        "isometric", "static", "hold" -> {
+                    }
+                    "isometric", "static", "hold" -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
-                                text = "Isometric Exercise - Track Hold Duration",
+                                text = "Isometric - Hold Duration",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth()
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             ExerciseTypeInputFields(
@@ -919,12 +1001,16 @@ private fun ExerciseRow(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        "stretching", "flexibility" -> {
+                    }
+                    "stretching", "flexibility" -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
-                                text = "Stretching Exercise - Track Stretch Duration",
+                                text = "Stretching - Duration",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth()
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             ExerciseTypeInputFields(
@@ -939,34 +1025,39 @@ private fun ExerciseRow(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        else -> {
-                            // Default to strength exercise inputs for unknown types
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(
-                                    value = sets,
-                                    onValueChange = { newValue ->
-                                        val filtered = newValue.filter { it.isDigit() }
-                                        sets = filtered
-                                        onUpdate(filtered, reps, rest)
-                                    },
-                                    label = { Text("Sets") },
-                                    modifier = Modifier.weight(1f),
-                                    colors = AppTextFieldDefaults.outlinedColors(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                                )
-                                OutlinedTextField(
-                                    value = reps,
-                                    onValueChange = { newValue ->
-                                        val filtered = newValue.filter { it.isDigit() }
-                                        reps = filtered
-                                        onUpdate(sets, filtered, rest)
-                                    },
-                                    label = { Text("Reps") },
-                                    modifier = Modifier.weight(1f),
-                                    colors = AppTextFieldDefaults.outlinedColors(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                                )
-                            }
+                    }
+                    else -> {
+                        // Default to strength exercise inputs for unknown types (side by side)
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = sets,
+                                onValueChange = { newValue ->
+                                    val filtered = newValue.filter { it.isDigit() }
+                                    sets = filtered
+                                    onUpdate(filtered, reps, rest)
+                                },
+                                label = { Text("Sets", style = MaterialTheme.typography.bodyMedium) },
+                                modifier = Modifier.weight(1f),
+                                colors = AppTextFieldDefaults.outlinedColors(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.bodyLarge
+                            )
+                            OutlinedTextField(
+                                value = reps,
+                                onValueChange = { newValue ->
+                                    val filtered = newValue.filter { it.isDigit() }
+                                    reps = filtered
+                                    onUpdate(sets, filtered, rest)
+                                },
+                                label = { Text("Reps", style = MaterialTheme.typography.bodyMedium) },
+                                modifier = Modifier.weight(1f),
+                                colors = AppTextFieldDefaults.outlinedColors(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.bodyLarge
+                            )
                         }
                     }
                 }
