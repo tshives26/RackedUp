@@ -1011,6 +1011,7 @@ class ProgramsViewModel @Inject constructor(
         if (byExact != null) return byExact
 
         val synonyms = mapOf(
+            // Existing synonyms
             "ohp" to "overhead press",
             "press" to "overhead press",
             "pullups" to "pull-ups",
@@ -1032,7 +1033,43 @@ class ProgramsViewModel @Inject constructor(
             "pushups" to "push-ups",
             "bodyweight squat" to "bodyweight squat",
             "pike pushups" to "pike push-ups",
-            "tricep pushdown" to "tricep pushdown"
+            "tricep pushdown" to "tricep pushdown",
+            
+            // Additional synonyms for template exercises
+            "pull-ups" to "pull up",
+            "push-ups" to "push up",
+            "chin-ups" to "pull up",
+            "triceps pushdowns" to "tricep pushdown",
+            "triceps pushdown" to "tricep pushdown",
+            "lateral raises" to "lateral raise",
+            "lateral raise" to "lateral raise",
+            "face pull" to "face pull",
+            "dumbbell curl" to "bicep curl",
+            "hammer curl" to "hammer curl",
+            "barbell curl" to "bicep curl",
+            "walking lunge" to "lunge",
+            "bulgarian split squat" to "bulgarian split squat",
+            "bulgarian split squats" to "bulgarian split squat",
+            "incline dumbbell press" to "incline dumbbell press",
+            "incline bench press" to "incline bench press",
+            "front squat" to "front squat",
+            "leg press" to "leg press",
+            "skullcrusher" to "lying tricep extension",
+            "dips" to "dip",
+            "bench dips" to "dip",
+            "diamond push-ups" to "diamond push up",
+            "pike push-ups" to "pike push up",
+            "inverted rows" to "inverted row",
+            "towel rows" to "inverted row",
+            "superman hold" to "superman",
+            "hollow body hold" to "hollow body hold",
+            "squats" to "squat",
+            "glute bridge" to "glute bridge",
+            "calf raises" to "calf raise",
+            "squat (5/3/1 sets)" to "squat",
+            "deadlift (5/3/1 sets)" to "deadlift",
+            "bench press (5/3/1 sets)" to "bench press",
+            "overhead press (5/3/1 sets)" to "overhead press"
         )
 
         val canonical = synonyms[nameNorm] ?: nameNorm
@@ -1049,7 +1086,17 @@ class ProgramsViewModel @Inject constructor(
 
         // Fallback: partial contains by main head noun
         val head = tokens.lastOrNull() ?: nameNorm
-        return all.firstOrNull { normalize(it.name).contains(head) }
+        val result = all.firstOrNull { normalize(it.name).contains(head) }
+        
+        // Log when exercise resolution fails to help with debugging
+        if (result == null) {
+            Log.w("ProgramsViewModel", "Failed to resolve exercise: '$rawName' (normalized: '$nameNorm')")
+            Log.d("ProgramsViewModel", "Available exercises: ${all.take(5).map { it.name }}")
+        } else {
+            Log.d("ProgramsViewModel", "Resolved '$rawName' -> '${result.name}'")
+        }
+        
+        return result
     }
 
     /**
