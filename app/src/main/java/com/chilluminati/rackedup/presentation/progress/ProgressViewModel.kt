@@ -309,7 +309,7 @@ class ProgressViewModel @Inject constructor(
     private fun initializePRsFromHistory() {
         viewModelScope.launch {
             try {
-                progressRepository.initializeVolumePRsFromHistory()
+                progressRepository.initializeAllPRsFromHistory()
             } catch (e: Exception) {
                 // Log error but don't crash the app
                 e.printStackTrace()

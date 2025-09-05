@@ -226,7 +226,7 @@ class WorkoutRepository @Inject constructor(
                 workoutDao.updateWorkout(updatedWorkout)
                 
                 // Check for new personal records after workout completion
-                progressRepository.checkAndUpdateVolumePRs(workoutId)
+                progressRepository.checkAndUpdatePersonalRecords(workoutId)
             }
         }
     }

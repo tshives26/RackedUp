@@ -55,6 +55,9 @@ interface PersonalRecordDao {
 
     @Delete
     suspend fun deletePersonalRecord(personalRecord: PersonalRecord)
+    
+    @Query("DELETE FROM personal_records")
+    suspend fun deleteAllPersonalRecords()
 
     /**
      * Clean up duplicate volume personal records, keeping only the best one per exercise

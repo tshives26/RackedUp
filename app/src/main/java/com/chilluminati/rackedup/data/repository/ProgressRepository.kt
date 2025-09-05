@@ -8,6 +8,7 @@ import com.chilluminati.rackedup.data.database.dao.PersonalRecordDao
 import com.chilluminati.rackedup.data.database.entity.PersonalRecord
 import com.chilluminati.rackedup.data.database.entity.BodyMeasurement
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
+import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -148,9 +149,29 @@ class ProgressRepository @Inject constructor(
     }
     
     /**
+     * Initialize all types of personal records from historical workout data
+     * This is a comprehensive one-time operation to populate all PRs for existing workouts
+     */
+    suspend fun initializeAllPRsFromHistory() {
+        withContext(ioDispatcher) {
+            // Get all completed workouts ordered by date
+            val workouts = workoutDao.getAllWorkoutsList()
+                .filter { it.isCompleted }
+                .sortedBy { it.date }
+            
+            // Process each workout chronologically to build PR history
+            for (workout in workouts) {
+                checkAndUpdatePersonalRecords(workout.id)
+            }
+        }
+    }
+    
+    /**
      * Initialize volume-based personal records from existing workout data
      * This should be called once to populate PRs from historical data
+     * @deprecated Use initializeAllPRsFromHistory() instead for comprehensive PR tracking
      */
+    @Deprecated("Use initializeAllPRsFromHistory() instead for comprehensive PR tracking")
     suspend fun initializeVolumePRsFromHistory() {
         withContext(ioDispatcher) {
             // Get exercise sets, workout exercises, and exercises for volume PR calculation
@@ -197,10 +218,10 @@ class ProgressRepository @Inject constructor(
     }
     
     /**
-     * Check and update volume-based personal records for a completed workout
+     * Check and update all types of personal records for a completed workout
      * This should be called when a workout is completed to check for new PRs
      */
-    suspend fun checkAndUpdateVolumePRs(workoutId: Long) {
+    suspend fun checkAndUpdatePersonalRecords(workoutId: Long) {
         withContext(ioDispatcher) {
             // Get all exercise sets for this workout
             val workoutExercises = workoutExerciseDao.getWorkoutExercises(workoutId).first()
@@ -216,40 +237,269 @@ class ProgressRepository @Inject constructor(
             
             // Check each set for potential new PRs
             for (set in exerciseSets) {
-                if (set.weight != null && set.reps != null && set.reps > 0) {
-                    val workoutExercise = workoutExercises.find { it.id == set.workoutExerciseId }
-                    if (workoutExercise != null) {
-                        val exerciseId = workoutExercise.exerciseId
-                        val volume = set.weight * set.reps
-                        
-                        // Check if this is a new PR
+                if (!set.isCompleted) continue // Only check completed sets
+                
+                val workoutExercise = workoutExercises.find { it.id == set.workoutExerciseId }
+                if (workoutExercise != null) {
+                    val exerciseId = workoutExercise.exerciseId
+                    val exercise = exerciseMap[exerciseId]
+                    
+                    if (exercise != null) {
                         val existingPRs = personalRecordDao.getPersonalRecordsSync(exerciseId)
-                        val existingPR = existingPRs.find { it.recordType == "Volume" }
                         
-                        if (existingPR == null || volume > (existingPR.volume ?: 0.0)) {
-                            val exercise = exerciseMap[exerciseId]
-                            if (exercise != null) {
-                                val newPR = PersonalRecord(
-                                    exerciseId = exerciseId,
-                                    recordType = "Volume",
-                                    weight = set.weight,
-                                    reps = set.reps,
-                                    volume = volume,
-                                    workoutId = workoutId,
-                                    achievedAt = set.createdAt,
-                                    previousValue = existingPR?.volume,
-                                    improvement = if (existingPR != null && existingPR.volume != null) {
-                                        ((volume - existingPR.volume) / existingPR.volume) * 100
-                                    } else null
-                                )
-                                
-                                personalRecordDao.insertPersonalRecord(newPR)
+                        when (exercise.exerciseType) {
+                            "Strength" -> {
+                                checkStrengthPRs(set, exercise, existingPRs, workoutId)
+                            }
+                            "Cardio" -> {
+                                checkCardioPRs(set, exercise, existingPRs, workoutId)
+                            }
+                            "Isometric" -> {
+                                checkIsometricPRs(set, exercise, existingPRs, workoutId)
+                            }
+                            else -> {
+                                // Default to strength-based tracking for unknown types
+                                checkStrengthPRs(set, exercise, existingPRs, workoutId)
                             }
                         }
                     }
                 }
             }
         }
+    }
+    
+    /**
+     * Check for strength-based personal records (Volume, 1RM, Max Weight)
+     */
+    private suspend fun checkStrengthPRs(
+        set: ExerciseSet, 
+        exercise: Exercise, 
+        existingPRs: List<PersonalRecord>, 
+        workoutId: Long
+    ) {
+        if (set.weight != null && set.reps != null && set.reps > 0) {
+            val newPRs = mutableListOf<PersonalRecord>()
+            
+            // 1. Volume PR (weight × reps)
+            val volume = set.weight * set.reps
+            val existingVolumePR = existingPRs.find { it.recordType == "Volume" }
+            
+            if (existingVolumePR == null || volume > (existingVolumePR.volume ?: 0.0)) {
+                newPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Volume",
+                    weight = set.weight,
+                    reps = set.reps,
+                    volume = volume,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingVolumePR?.volume,
+                    improvement = if (existingVolumePR?.volume != null) {
+                        ((volume - existingVolumePR.volume) / existingVolumePR.volume) * 100
+                    } else null
+                ))
+            }
+            
+            // 2. Max Weight PR (heaviest single set)
+            val existingMaxWeightPR = existingPRs.find { it.recordType == "Max Weight" }
+            
+            if (existingMaxWeightPR == null || set.weight > (existingMaxWeightPR.weight ?: 0.0)) {
+                newPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Max Weight",
+                    weight = set.weight,
+                    reps = set.reps,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingMaxWeightPR?.weight,
+                    improvement = if (existingMaxWeightPR?.weight != null) {
+                        ((set.weight - existingMaxWeightPR.weight) / existingMaxWeightPR.weight) * 100
+                    } else null
+                ))
+            }
+            
+            // 3. Estimated 1RM PR
+            if (set.reps > 0) {
+                val estimated1RM = calculateOneRepMax(set.weight, set.reps, set.rpe)
+                val existing1RMPR = existingPRs.find { it.recordType == "1RM" }
+                
+                if (existing1RMPR == null || estimated1RM > (existing1RMPR.estimated1RM ?: 0.0)) {
+                    newPRs.add(PersonalRecord(
+                        exerciseId = exercise.id,
+                        recordType = "1RM",
+                        weight = set.weight,
+                        reps = set.reps,
+                        estimated1RM = estimated1RM,
+                        workoutId = workoutId,
+                        achievedAt = set.createdAt,
+                        previousValue = existing1RMPR?.estimated1RM,
+                        improvement = if (existing1RMPR?.estimated1RM != null) {
+                            ((estimated1RM - existing1RMPR.estimated1RM) / existing1RMPR.estimated1RM) * 100
+                        } else null
+                    ))
+                }
+            }
+            
+            // Insert all new PRs
+            if (newPRs.isNotEmpty()) {
+                newPRs.forEach { personalRecordDao.insertPersonalRecord(it) }
+            }
+        }
+    }
+    
+    /**
+     * Check for cardio-based personal records (Distance, Duration, Speed)
+     */
+    private suspend fun checkCardioPRs(
+        set: ExerciseSet, 
+        exercise: Exercise, 
+        existingPRs: List<PersonalRecord>, 
+        workoutId: Long
+    ) {
+        val newPRs = mutableListOf<PersonalRecord>()
+        
+        // 1. Distance PR
+        if (set.distance != null && set.distance > 0) {
+            val existingDistancePR = existingPRs.find { it.recordType == "Distance" }
+            
+            if (existingDistancePR == null || set.distance > (existingDistancePR.distance ?: 0.0)) {
+                newPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Distance",
+                    distance = set.distance,
+                    durationSeconds = set.durationSeconds,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingDistancePR?.distance,
+                    improvement = if (existingDistancePR?.distance != null) {
+                        ((set.distance - existingDistancePR.distance) / existingDistancePR.distance) * 100
+                    } else null
+                ))
+            }
+        }
+        
+        // 2. Duration PR
+        if (set.durationSeconds != null && set.durationSeconds > 0) {
+            val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
+            
+            if (existingDurationPR == null || set.durationSeconds > (existingDurationPR.durationSeconds ?: 0)) {
+                newPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Duration",
+                    durationSeconds = set.durationSeconds,
+                    distance = set.distance,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingDurationPR?.durationSeconds?.toDouble(),
+                    improvement = if (existingDurationPR?.durationSeconds != null) {
+                        ((set.durationSeconds - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
+                    } else null
+                ))
+            }
+        }
+        
+        // 3. Speed PR (distance per time - higher is better)
+        if (set.distance != null && set.durationSeconds != null && 
+            set.distance > 0 && set.durationSeconds > 0) {
+            val speed = set.distance / (set.durationSeconds / 3600.0) // km/h or mph
+            val existingSpeedPR = existingPRs.find { it.recordType == "Speed" }
+            val existingSpeed = if (existingSpeedPR?.distance != null && existingSpeedPR.durationSeconds != null) {
+                existingSpeedPR.distance / (existingSpeedPR.durationSeconds / 3600.0)
+            } else null
+            
+            if (existingSpeed == null || speed > existingSpeed) {
+                newPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Speed",
+                    distance = set.distance,
+                    durationSeconds = set.durationSeconds,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingSpeed,
+                    improvement = if (existingSpeed != null) {
+                        ((speed - existingSpeed) / existingSpeed) * 100
+                    } else null
+                ))
+            }
+        }
+        
+        // Insert all new PRs
+        if (newPRs.isNotEmpty()) {
+            newPRs.forEach { personalRecordDao.insertPersonalRecord(it) }
+        }
+    }
+    
+    /**
+     * Check for isometric-based personal records (Duration)
+     */
+    private suspend fun checkIsometricPRs(
+        set: ExerciseSet, 
+        exercise: Exercise, 
+        existingPRs: List<PersonalRecord>, 
+        workoutId: Long
+    ) {
+        // Duration PR for isometric exercises
+        if (set.durationSeconds != null && set.durationSeconds > 0) {
+            val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
+            
+            if (existingDurationPR == null || set.durationSeconds > (existingDurationPR.durationSeconds ?: 0)) {
+                val newPR = PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "Duration",
+                    durationSeconds = set.durationSeconds,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existingDurationPR?.durationSeconds?.toDouble(),
+                    improvement = if (existingDurationPR?.durationSeconds != null) {
+                        ((set.durationSeconds - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
+                    } else null
+                )
+                
+                personalRecordDao.insertPersonalRecord(newPR)
+            }
+        }
+    }
+    
+    /**
+     * Calculate estimated 1RM using appropriate formula
+     */
+    private fun calculateOneRepMax(weight: Double, reps: Int, rpe: Int? = null): Double {
+        return when {
+            reps == 1 -> weight
+            rpe != null -> calculateOneRepMaxWithRPE(weight, reps, rpe)
+            else -> calculateOneRepMaxEpley(weight, reps)
+        }
+    }
+    
+    /**
+     * Epley formula for 1RM estimation
+     */
+    private fun calculateOneRepMaxEpley(weight: Double, reps: Int): Double {
+        if (reps <= 0) return weight
+        return weight * (1 + reps / 30.0)
+    }
+    
+    /**
+     * RPE-based 1RM estimation
+     */
+    private fun calculateOneRepMaxWithRPE(weight: Double, reps: Int, rpe: Int): Double {
+        if (reps <= 0 || rpe <= 0) return weight
+        
+        // RPE to percentage of 1RM conversion table
+        val rpeToPercentage = mapOf(
+            10 to 100, 9 to 97, 8 to 93, 7 to 88, 6 to 83,
+            5 to 77, 4 to 70, 3 to 62, 2 to 52, 1 to 40
+        )
+        
+        val percentage = rpeToPercentage[rpe] ?: return calculateOneRepMaxEpley(weight, reps)
+        return (weight * 100) / percentage
+    }
+    
+    /**
+     * Legacy method for backward compatibility - now calls the comprehensive method
+     */
+    suspend fun checkAndUpdateVolumePRs(workoutId: Long) {
+        checkAndUpdatePersonalRecords(workoutId)
     }
     
     /**
