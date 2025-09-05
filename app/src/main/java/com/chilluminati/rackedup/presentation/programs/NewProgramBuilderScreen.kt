@@ -764,7 +764,7 @@ private fun ExerciseRow(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(12.dp)) {
-            // Main row with arrows on left, image, exercise info, till failure toggle, and delete
+            // Main row with arrows on left, image, and exercise info
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -796,19 +796,19 @@ private fun ExerciseRow(
                     }
                 }
 
-                // Exercise image
+                // Exercise image - made larger
                 if (!details?.imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = details?.imageUrl,
                         contentDescription = details?.name,
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(64.dp)
                             .clickable { onPreview(exercise.exerciseId) }
                     )
                     Spacer(Modifier.width(12.dp))
                 }
                 
-                // Exercise info
+                // Exercise info - larger text sizes
                 val subtitle = (details?.category ?: "").replaceFirstChar { ch ->
                     if (ch.isLowerCase()) ch.titlecase(java.util.Locale.getDefault()) else ch.toString()
                 }
@@ -819,57 +819,15 @@ private fun ExerciseRow(
                 ) {
                     Text(
                         text = details?.name ?: "Exercise ${exercise.exerciseId}",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Medium,
-                        maxLines = 1
+                        maxLines = 2
                     )
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
-                    )
-                }
-                
-                // Till Failure toggle (for strength exercises only)
-                details?.let { exerciseDetails ->
-                    val effectiveType = determineEffectiveExerciseType(exerciseDetails)
-                    if (effectiveType in listOf("strength", "resistance", "weight training")) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 6.dp)
-                        ) {
-                            Text(
-                                text = "Failure",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Switch(
-                                checked = exercise.tillFailure,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        onUpdate(sets, "Till Failure", rest)
-                                    } else {
-                                        onUpdate(sets, "10", rest)
-                                    }
-                                },
-                                modifier = Modifier.scale(0.8f)
-                            )
-                        }
-                    }
-                }
-                
-                // Delete button
-                IconButton(
-                    onClick = onRemove,
-                    modifier = Modifier.size(36.dp)
-                ) { 
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -1060,6 +1018,57 @@ private fun ExerciseRow(
                             )
                         }
                     }
+                }
+            }
+            
+            // Bottom row with failure toggle on left and delete icon on right
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Till Failure toggle (for strength exercises only) - bottom left
+                details?.let { exerciseDetails ->
+                    val effectiveType = determineEffectiveExerciseType(exerciseDetails)
+                    if (effectiveType in listOf("strength", "resistance", "weight training")) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Failure",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Switch(
+                                checked = exercise.tillFailure,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        onUpdate(sets, "Till Failure", rest)
+                                    } else {
+                                        onUpdate(sets, "10", rest)
+                                    }
+                                },
+                                modifier = Modifier.scale(0.9f)
+                            )
+                        }
+                    } else {
+                        // Empty space if not a strength exercise
+                        Spacer(Modifier.width(1.dp))
+                    }
+                }
+                
+                // Delete button - bottom right
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(40.dp)
+                ) { 
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
