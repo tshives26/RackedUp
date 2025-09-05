@@ -52,8 +52,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
  import com.chilluminati.rackedup.presentation.components.FullScreenImageDialog
  import com.chilluminati.rackedup.data.database.entity.Exercise
- import com.chilluminati.rackedup.data.database.entity.ProgramExercise
- import android.util.Log
+import com.chilluminati.rackedup.data.database.entity.ProgramExercise
+import com.chilluminati.rackedup.presentation.components.ExerciseTypeInputFields
+import com.chilluminati.rackedup.presentation.components.ExerciseInputData
+import com.chilluminati.rackedup.presentation.components.determineEffectiveExerciseType
+import android.util.Log
 
 @Composable
 fun NewProgramBuilderScreen(
@@ -727,6 +730,33 @@ private fun ExerciseRow(
     var sets by remember(exercise.sets) { mutableStateOf(exercise.sets) }
     var reps by remember(exercise.reps) { mutableStateOf(exercise.reps ?: "10") }
     var rest by remember(exercise.restTimeSeconds) { mutableStateOf(exercise.restTimeSeconds ?: 60) }
+    
+    // Exercise type-specific input data
+    var inputData by remember(exercise.exerciseId, exercise.sets, exercise.reps) {
+        mutableStateOf(
+            when (details?.exerciseType?.lowercase()) {
+                "strength" -> ExerciseInputData(
+                    weight = "", // Weight not stored in program exercise, only in sets
+                    reps = exercise.reps ?: "10",
+                    sets = exercise.sets
+                )
+                "cardio" -> ExerciseInputData(
+                    distance = "",
+                    durationMinutes = "",
+                    durationSeconds = "",
+                    pace = ""
+                )
+                "isometric" -> ExerciseInputData(
+                    holdDurationMinutes = "",
+                    holdDurationSeconds = ""
+                )
+                else -> ExerciseInputData(
+                    reps = exercise.reps ?: "10",
+                    sets = exercise.sets
+                )
+            }
+        )
+    }
 
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(12.dp)) {
@@ -758,55 +788,187 @@ private fun ExerciseRow(
             }
             Spacer(Modifier.height(8.dp))
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Till Failure toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Till Failure", style = MaterialTheme.typography.titleSmall)
-                    Switch(
-                        checked = exercise.tillFailure,
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                onUpdate(sets, "Till Failure", rest)
-                            } else {
-                                onUpdate(sets, "10", rest)
+                // Exercise type-specific inputs
+                details?.let { exerciseDetails ->
+                    // Debug: Log the exercise type and category
+                    Log.d("ExerciseRow", "Exercise: ${exerciseDetails.name}, Type: '${exerciseDetails.exerciseType}', Category: '${exerciseDetails.category}'")
+                    
+                    // Determine exercise type using helper function
+                    val effectiveType = determineEffectiveExerciseType(exerciseDetails)
+                    
+                    Log.d("ExerciseRow", "Effective type determined: '$effectiveType'")
+                    
+                    when (effectiveType) {
+                        "strength", "resistance", "weight training" -> {
+                            // Till Failure toggle for strength exercises
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Till Failure", style = MaterialTheme.typography.titleSmall)
+                                Switch(
+                                    checked = exercise.tillFailure,
+                                    onCheckedChange = { checked ->
+                                        if (checked) {
+                                            onUpdate(sets, "Till Failure", rest)
+                                        } else {
+                                            onUpdate(sets, "10", rest)
+                                        }
+                                    }
+                                )
+                            }
+                            
+                            // Sets input for strength exercises
+                            OutlinedTextField(
+                                value = sets,
+                                onValueChange = { newValue ->
+                                    val filtered = newValue.filter { it.isDigit() }
+                                    sets = filtered
+                                    inputData = inputData.copy(sets = filtered)
+                                    onUpdate(filtered, reps, rest)
+                                },
+                                label = { Text("Sets") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = AppTextFieldDefaults.outlinedColors(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Reps input for strength exercises
+                            OutlinedTextField(
+                                value = if (exercise.tillFailure) "Failure" else reps,
+                                onValueChange = { newValue ->
+                                    if (!exercise.tillFailure) {
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        reps = filtered
+                                        inputData = inputData.copy(reps = filtered)
+                                        onUpdate(sets, filtered, rest)
+                                    }
+                                },
+                                label = { Text("Reps") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = AppTextFieldDefaults.outlinedColors(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = !exercise.tillFailure,
+                                readOnly = exercise.tillFailure
+                            )
+                        }
+                        "cardio", "cardiovascular", "aerobic", "endurance" -> {
+                            Text(
+                                text = "Cardio Exercise - Track Distance, Duration & Pace",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            ExerciseTypeInputFields(
+                                exercise = exerciseDetails,
+                                inputData = inputData,
+                                onInputChange = { newInputData ->
+                                    inputData = newInputData
+                                    // For cardio, we don't use traditional sets/reps
+                                    // but we still need to call onUpdate for compatibility
+                                    onUpdate("1", "1", rest)
+                                },
+                                weightUnit = "lbs", // This won't be used for cardio
+                                distanceUnit = "km",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "plyometrics" -> {
+                            Text(
+                                text = "Plyometric Exercise - Track Explosive Reps & Sets",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            ExerciseTypeInputFields(
+                                exercise = exerciseDetails,
+                                inputData = inputData,
+                                onInputChange = { newInputData ->
+                                    inputData = newInputData
+                                    val newSets = newInputData.sets.ifBlank { "3" }
+                                    val newReps = newInputData.reps.ifBlank { "10" }
+                                    onUpdate(newSets, newReps, rest)
+                                },
+                                weightUnit = "lbs",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "isometric", "static", "hold" -> {
+                            Text(
+                                text = "Isometric Exercise - Track Hold Duration",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            ExerciseTypeInputFields(
+                                exercise = exerciseDetails,
+                                inputData = inputData,
+                                onInputChange = { newInputData ->
+                                    inputData = newInputData
+                                    // For isometric, we use sets but duration instead of reps
+                                    val newSets = newInputData.sets.ifBlank { "3" }
+                                    onUpdate(newSets, "1", rest)
+                                },
+                                weightUnit = "lbs",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "stretching", "flexibility" -> {
+                            Text(
+                                text = "Stretching Exercise - Track Stretch Duration",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            ExerciseTypeInputFields(
+                                exercise = exerciseDetails,
+                                inputData = inputData,
+                                onInputChange = { newInputData ->
+                                    inputData = newInputData
+                                    // For stretching, we typically do 1 set with duration
+                                    onUpdate("1", "1", rest)
+                                },
+                                weightUnit = "lbs",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        else -> {
+                            // Default to strength exercise inputs for unknown types
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = sets,
+                                    onValueChange = { newValue ->
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        sets = filtered
+                                        onUpdate(filtered, reps, rest)
+                                    },
+                                    label = { Text("Sets") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = AppTextFieldDefaults.outlinedColors(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
+                                OutlinedTextField(
+                                    value = reps,
+                                    onValueChange = { newValue ->
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        reps = filtered
+                                        onUpdate(sets, filtered, rest)
+                                    },
+                                    label = { Text("Reps") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = AppTextFieldDefaults.outlinedColors(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                )
                             }
                         }
-                    )
-                }
-
-                // Sets and Reps inputs
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = sets,
-                        onValueChange = { newValue ->
-                            val filtered = newValue.filter { it.isDigit() }
-                            sets = filtered
-                            onUpdate(filtered, reps, rest)
-                        },
-                        label = { Text("Sets") },
-                        modifier = Modifier.weight(1f),
-                        colors = AppTextFieldDefaults.outlinedColors(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                    OutlinedTextField(
-                        value = if (exercise.tillFailure) "Failure" else reps,
-                        onValueChange = { newValue ->
-                            if (!exercise.tillFailure) {
-                                val filtered = newValue.filter { it.isDigit() }
-                                reps = filtered
-                                onUpdate(sets, filtered, rest)
-                            }
-                        },
-                        label = { Text("Reps") },
-                        modifier = Modifier.weight(1f),
-                        colors = AppTextFieldDefaults.outlinedColors(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = !exercise.tillFailure,
-                        readOnly = exercise.tillFailure
-                    )
+                    }
                 }
             }
         }

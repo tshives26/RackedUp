@@ -741,6 +741,7 @@ fun ActiveExerciseCard(
                 exerciseSets.forEach { set ->
                     SetRow(
                         set = set,
+                        exercise = exerciseDetails[workoutExercise.exerciseId], // Add exercise parameter
                         setNumber = set.setNumber,
                         weight = set.weight?.toInt()?.toString() ?: "",
                         reps = set.reps?.toString() ?: "",
@@ -752,10 +753,12 @@ fun ActiveExerciseCard(
                         onComplete = {
                             onUpdateSet(set.copy(isCompleted = !set.isCompleted))
                         },
-                        onUpdateSet = { weight, reps ->
+                        onUpdateSet = { weight, reps, distance, durationSeconds -> // Fix callback signature
                             onUpdateSet(set.copy(
                                 weight = if (weight.isBlank()) null else weight.toDoubleOrNull(),
-                                reps = if (reps.isBlank()) null else reps.toIntOrNull()
+                                reps = if (reps.isBlank()) null else reps.toIntOrNull(),
+                                distance = if (distance.isBlank()) null else distance.toDoubleOrNull(),
+                                durationSeconds = if (durationSeconds == 0) null else durationSeconds
                             ))
                         },
                         onStartRest = onStartRest,

@@ -39,6 +39,9 @@ import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.Exercise
 import com.chilluminati.rackedup.presentation.workouts.ActiveWorkoutState
 import com.chilluminati.rackedup.presentation.programs.ExercisePreviewSheet
+import com.chilluminati.rackedup.presentation.components.ExerciseTypeInputFields
+import com.chilluminati.rackedup.presentation.components.ExerciseInputData
+import com.chilluminati.rackedup.presentation.components.determineEffectiveExerciseType
 import kotlin.math.roundToInt
 
 @Composable
@@ -463,6 +466,7 @@ fun ActiveExerciseCard(
                 exerciseSets.forEach { set ->
                     SetRow(
                         set = set,
+                        exercise = exercise, // Pass exercise details
                         setNumber = set.setNumber,
                         weight = set.weight?.toInt()?.toString() ?: "",
                         reps = set.reps?.toString() ?: "",
@@ -472,10 +476,12 @@ fun ActiveExerciseCard(
                         onComplete = {
                             onUpdateSet(set.copy(isCompleted = !set.isCompleted))
                         },
-                        onUpdateSet = { weight, reps ->
+                        onUpdateSet = { weight, reps, distance, durationSeconds ->
                             onUpdateSet(set.copy(
                                 weight = if (weight.isBlank()) null else weight.toDoubleOrNull(),
-                                reps = if (reps.isBlank()) null else reps.toIntOrNull()
+                                reps = if (reps.isBlank()) null else reps.toIntOrNull(),
+                                distance = if (distance.isBlank()) null else distance.toDoubleOrNull(),
+                                durationSeconds = if (durationSeconds == 0) null else durationSeconds
                             ))
                         },
                         onStartRest = onStartRest,
@@ -590,6 +596,7 @@ fun ActiveExerciseCard(
 @Composable
 fun SetRow(
     set: ExerciseSet,
+    exercise: Exercise?,
     setNumber: Int,
     weight: String,
     reps: String,
@@ -598,7 +605,7 @@ fun SetRow(
     defaultRestSeconds: Int,
     repScheme: String? = null,
     onComplete: () -> Unit,
-    onUpdateSet: (String, String) -> Unit,
+    onUpdateSet: (String, String, String, Int) -> Unit, // weight, reps, distance, durationSeconds
     onStartRest: (Int) -> Unit,
     onDeleteSet: (ExerciseSet) -> Unit
 ) {
@@ -617,6 +624,44 @@ fun SetRow(
     var showDeleteMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var countdown by remember { mutableStateOf(5) }
+    
+    // Exercise type-specific input data
+    var inputData by remember(set.id, set.weight, set.reps, set.distance, set.durationSeconds) {
+        mutableStateOf(
+            exercise?.let { ex ->
+                when (ex.exerciseType.lowercase()) {
+                    "strength" -> ExerciseInputData(
+                        weight = currentWeight,
+                        reps = currentReps
+                    )
+                    "cardio" -> {
+                        val minutes = (set.durationSeconds ?: 0) / 60
+                        val seconds = (set.durationSeconds ?: 0) % 60
+                        ExerciseInputData(
+                            distance = set.distance?.toString() ?: "",
+                            durationMinutes = if (minutes > 0) minutes.toString() else "",
+                            durationSeconds = if (seconds > 0) seconds.toString() else ""
+                        )
+                    }
+                    "isometric" -> {
+                        val minutes = (set.durationSeconds ?: 0) / 60
+                        val seconds = (set.durationSeconds ?: 0) % 60
+                        ExerciseInputData(
+                            holdDurationMinutes = if (minutes > 0) minutes.toString() else "",
+                            holdDurationSeconds = if (seconds > 0) seconds.toString() else ""
+                        )
+                    }
+                    else -> ExerciseInputData(
+                        weight = currentWeight,
+                        reps = currentReps
+                    )
+                }
+            } ?: ExerciseInputData(
+                weight = currentWeight,
+                reps = currentReps
+            )
+        )
+    }
     
     // Check if this is an AMRAP/Until Failure exercise
     val isAmrapOrFailure = repScheme?.let { scheme ->
@@ -756,91 +801,246 @@ fun SetRow(
                 )
             }
 
-            // Weight input
-            OutlinedTextField(
-                value = currentWeight,
-                onValueChange = {
-                    // Only allow whole numbers and prevent leading zeros
-                    val filtered = it.filter { char -> char.isDigit() }
-                    val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                        filtered.substring(1)
-                    } else {
-                        filtered
-                    }
-                    currentWeight = cleaned
-                    // Pass empty string if no weight entered, otherwise pass the cleaned value
-                    val weightToSave = if (cleaned.isBlank()) "" else cleaned
-                    onUpdateSet(weightToSave, currentReps)
-                },
-                placeholder = { Text("0") },
-                suffix = { Text(" $weightUnit") },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-                    disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium
-            )
+            // Exercise type-specific inputs
+            exercise?.let { ex ->
+                val effectiveType = determineEffectiveExerciseType(ex)
+                when (effectiveType) {
+                    "strength", "resistance", "weight training" -> {
+                        // Weight input for strength exercises
+                        OutlinedTextField(
+                            value = currentWeight,
+                            onValueChange = {
+                                // Only allow whole numbers and prevent leading zeros
+                                val filtered = it.filter { char -> char.isDigit() }
+                                val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                    filtered.substring(1)
+                                } else {
+                                    filtered
+                                }
+                                currentWeight = cleaned
+                                inputData = inputData.copy(weight = cleaned)
+                                // Pass empty string if no weight entered, otherwise pass the cleaned value
+                                val weightToSave = if (cleaned.isBlank()) "" else cleaned
+                                onUpdateSet(weightToSave, currentReps, "", 0)
+                            },
+                            placeholder = { Text("0") },
+                            suffix = { Text(" $weightUnit") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                                disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
 
-            // Reps input
-            Surface(
-                color = if (isAmrapOrFailure) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.weight(1f)
-            ) {
-                if (isAmrapOrFailure) {
-                    // Show "UNTIL FAILURE" text for AMRAP/Until Failure exercises
-                    Text(
-                        text = "UNTIL FAILURE",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    // Regular reps input field for non-AMRAP exercises
-                    OutlinedTextField(
-                        value = currentReps,
-                        onValueChange = {
-                            // Only allow whole numbers and prevent leading zeros
-                            val filtered = it.filter { char -> char.isDigit() }
-                            val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
-                                filtered.substring(1)
+                        // Reps input for strength exercises
+                        Surface(
+                            color = if (isAmrapOrFailure) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (isAmrapOrFailure) {
+                                // Show "UNTIL FAILURE" text for AMRAP/Until Failure exercises
+                                Text(
+                                    text = "UNTIL FAILURE",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    textAlign = TextAlign.Center,
+                                    fontWeight = FontWeight.Bold
+                                )
                             } else {
-                                filtered
+                                // Regular reps input field for non-AMRAP exercises
+                                OutlinedTextField(
+                                    value = currentReps,
+                                    onValueChange = {
+                                        // Only allow whole numbers and prevent leading zeros
+                                        val filtered = it.filter { char -> char.isDigit() }
+                                        val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                            filtered.substring(1)
+                                        } else {
+                                            filtered
+                                        }
+                                        currentReps = cleaned
+                                        inputData = inputData.copy(reps = cleaned)
+                                        // Pass empty string if no reps entered, otherwise pass the cleaned value
+                                        val repsToSave = if (cleaned.isBlank()) "" else cleaned
+                                        onUpdateSet(currentWeight, repsToSave, "", 0)
+                                    },
+                                    placeholder = { Text("reps") },
+                                    suffix = { Text(" reps") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                                        disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
+                                        disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    ),
+                                    textStyle = MaterialTheme.typography.bodyMedium
+                                )
                             }
-                            currentReps = cleaned
-                            // Pass empty string if no reps entered, otherwise pass the cleaned value
-                            val repsToSave = if (cleaned.isBlank()) "" else cleaned
-                            onUpdateSet(currentWeight, repsToSave)
-                        },
-                        placeholder = { Text("reps") },
-                        suffix = { Text(" reps") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-                            disabledBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f),
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        ),
-                        textStyle = MaterialTheme.typography.bodyMedium
-                    )
+                        }
+                    }
+                    "cardio", "cardiovascular", "aerobic", "endurance", "plyometrics", "isometric", "static", "hold", "stretching", "flexibility" -> {
+                        // Use exercise type-specific input fields for cardio and isometric
+                        Column(modifier = Modifier.weight(2f)) {
+                            ExerciseTypeInputFields(
+                                exercise = ex,
+                                inputData = inputData,
+                                onInputChange = { newInputData ->
+                                    inputData = newInputData
+                                    // Handle exercise type-specific data conversion
+                                    when (effectiveType) {
+                                        "cardio", "cardiovascular", "aerobic", "endurance" -> {
+                                            val totalDurationSeconds = (newInputData.durationMinutes.toIntOrNull() ?: 0) * 60 + 
+                                                                     (newInputData.durationSeconds.toIntOrNull() ?: 0)
+                                            val distance = newInputData.distance
+                                            onUpdateSet("", "", distance, totalDurationSeconds)
+                                        }
+                                        "plyometrics" -> {
+                                            // For plyometrics, use reps and sets
+                                            val reps = newInputData.reps
+                                            val sets = newInputData.sets
+                                            onUpdateSet("", reps, "", 0)
+                                        }
+                                        "isometric", "static", "hold" -> {
+                                            val totalDurationSeconds = (newInputData.holdDurationMinutes.toIntOrNull() ?: 0) * 60 + 
+                                                                     (newInputData.holdDurationSeconds.toIntOrNull() ?: 0)
+                                            onUpdateSet("", "", "", totalDurationSeconds)
+                                        }
+                                        "stretching", "flexibility" -> {
+                                            val totalDurationSeconds = (newInputData.holdDurationMinutes.toIntOrNull() ?: 0) * 60 + 
+                                                                     (newInputData.holdDurationSeconds.toIntOrNull() ?: 0)
+                                            onUpdateSet("", "", "", totalDurationSeconds)
+                                        }
+                                        else -> {
+                                            onUpdateSet("", "", "", 0)
+                                        }
+                                    }
+                                },
+                                weightUnit = weightUnit,
+                                distanceUnit = "km"
+                            )
+                        }
+                    }
+                    else -> {
+                        // Default to strength exercise inputs for unknown types
+                        OutlinedTextField(
+                            value = currentWeight,
+                            onValueChange = {
+                                val filtered = it.filter { char -> char.isDigit() }
+                                val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                    filtered.substring(1)
+                                } else {
+                                    filtered
+                                }
+                                currentWeight = cleaned
+                                val weightToSave = if (cleaned.isBlank()) "" else cleaned
+                                onUpdateSet(weightToSave, currentReps, "", 0)
+                            },
+                            placeholder = { Text("0") },
+                            suffix = { Text(" $weightUnit") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
+                        
+                        OutlinedTextField(
+                            value = currentReps,
+                            onValueChange = {
+                                val filtered = it.filter { char -> char.isDigit() }
+                                val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                                    filtered.substring(1)
+                                } else {
+                                    filtered
+                                }
+                                currentReps = cleaned
+                                val repsToSave = if (cleaned.isBlank()) "" else cleaned
+                                onUpdateSet(currentWeight, repsToSave, "", 0)
+                            },
+                            placeholder = { Text("reps") },
+                            suffix = { Text(" reps") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
+            } ?: run {
+                // Fallback for when exercise is null - use default strength inputs
+                OutlinedTextField(
+                    value = currentWeight,
+                    onValueChange = {
+                        val filtered = it.filter { char -> char.isDigit() }
+                        val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                            filtered.substring(1)
+                        } else {
+                            filtered
+                        }
+                        currentWeight = cleaned
+                        val weightToSave = if (cleaned.isBlank()) "" else cleaned
+                        onUpdateSet(weightToSave, currentReps, "", 0)
+                    },
+                    placeholder = { Text("0") },
+                    suffix = { Text(" $weightUnit") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                    ),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+                
+                OutlinedTextField(
+                    value = currentReps,
+                    onValueChange = {
+                        val filtered = it.filter { char -> char.isDigit() }
+                        val cleaned = if (filtered.startsWith("0") && filtered.length > 1) {
+                            filtered.substring(1)
+                        } else {
+                            filtered
+                        }
+                        currentReps = cleaned
+                        val repsToSave = if (cleaned.isBlank()) "" else cleaned
+                        onUpdateSet(currentWeight, repsToSave, "", 0)
+                    },
+                    placeholder = { Text("reps") },
+                    suffix = { Text(" reps") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                    ),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
             }
 
             // Modern complete toggle button
