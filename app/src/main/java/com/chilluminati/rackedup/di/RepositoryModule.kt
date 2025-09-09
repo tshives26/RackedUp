@@ -57,12 +57,14 @@ object RepositoryModule {
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
         programDao: ProgramDao,
         programDayDao: ProgramDayDao,
-        programExerciseDao: ProgramExerciseDao
+        programExerciseDao: ProgramExerciseDao,
+        workoutDao: WorkoutDao
     ): ProgramRepository = ProgramRepository(
         ioDispatcher = ioDispatcher,
         programDao = programDao,
         programDayDao = programDayDao,
-        programExerciseDao = programExerciseDao
+        programExerciseDao = programExerciseDao,
+        workoutDao = workoutDao
     )
 
     @Provides

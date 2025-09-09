@@ -3,6 +3,7 @@ package com.chilluminati.rackedup.data.repository
 import com.chilluminati.rackedup.data.database.dao.ProgramDao
 import com.chilluminati.rackedup.data.database.dao.ProgramDayDao
 import com.chilluminati.rackedup.data.database.dao.ProgramExerciseDao
+import com.chilluminati.rackedup.data.database.dao.WorkoutDao
 import com.chilluminati.rackedup.data.database.entity.Program
 import com.chilluminati.rackedup.data.database.entity.ProgramDay
 import com.chilluminati.rackedup.data.database.entity.ProgramExercise
@@ -24,7 +25,8 @@ class ProgramRepository @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val programDao: ProgramDao,
     private val programDayDao: ProgramDayDao,
-    private val programExerciseDao: ProgramExerciseDao
+    private val programExerciseDao: ProgramExerciseDao,
+    private val workoutDao: WorkoutDao
 ) {
     
     /**
@@ -289,6 +291,9 @@ class ProgramRepository @Inject constructor(
      * Replace the entire day/exercise structure for an existing program. This is used when
      * editing a program from the builder. The existing structure is removed, then the provided
      * structure is inserted fresh to keep IDs consistent and avoid complicated diffs.
+     * 
+     * IMPORTANT: This method preserves completion history by updating existing workouts to reference
+     * the new program day IDs based on day names and numbers.
      */
     suspend fun replaceProgramStructure(
         programId: Long,
@@ -303,7 +308,25 @@ class ProgramRepository @Inject constructor(
                 return@withContext
             }
 
-            // 1) Delete existing exercises and days for this program
+            // 1) Before deleting anything, collect existing program days and their completion data
+            val existingDays = programDayDao.getAllProgramDays().filter { it.programId == programId }
+            val existingCompletedWorkouts = workoutDao.getAllWorkoutsList()
+                .filter { it.programId == programId && it.programDayId != null && it.isCompleted }
+
+            // 2) Create mapping from old day IDs to new day IDs based on day names and numbers
+            val dayMapping = mutableMapOf<Long, Long>()
+            existingDays.forEach { oldDay ->
+                // Find matching new day by name and day number
+                val matchingNewDay = days.find { newDay ->
+                    newDay.name == oldDay.name && newDay.dayNumber == oldDay.dayNumber
+                }
+                if (matchingNewDay != null) {
+                    // We'll update this mapping after we create the new days
+                    dayMapping[oldDay.id] = 0L // Placeholder, will be updated
+                }
+            }
+
+            // 3) Delete existing exercises and days for this program
             val allDays = programDayDao.getAllProgramDays().filter { it.programId == programId }
             val allExercises = programExerciseDao.getAllProgramExercises()
             allDays.forEach { day ->
@@ -321,7 +344,7 @@ class ProgramRepository @Inject constructor(
                 )
             }
 
-            // 2) Create real days in DB
+            // 4) Create real days in DB and update the mapping
             val newDays = requiredDays.sortedBy { it.dayNumber }.map { day ->
                 val realId = programDayDao.insertProgramDay(
                     ProgramDay(
@@ -341,7 +364,33 @@ class ProgramRepository @Inject constructor(
                 day.id to realId
             }.toMap()
 
-            // 3) Persist exercises remapped to real day IDs
+            // 5) Update the day mapping with actual new IDs
+            existingDays.forEach { oldDay ->
+                val matchingNewDay = days.find { newDay ->
+                    newDay.name == oldDay.name && newDay.dayNumber == oldDay.dayNumber
+                }
+                if (matchingNewDay != null) {
+                    val newDayId = newDays[matchingNewDay.id]
+                    if (newDayId != null) {
+                        dayMapping[oldDay.id] = newDayId
+                    }
+                }
+            }
+
+            // 6) Update existing completed workouts to reference new program day IDs
+            existingCompletedWorkouts.forEach { workout ->
+                val oldProgramDayId = workout.programDayId
+                if (oldProgramDayId != null) {
+                    val newProgramDayId = dayMapping[oldProgramDayId]
+                    if (newProgramDayId != null && newProgramDayId != 0L) {
+                        val updatedWorkout = workout.copy(programDayId = newProgramDayId)
+                        workoutDao.updateWorkout(updatedWorkout)
+                        Log.d("ProgramRepository", "Updated workout ${workout.id} from day $oldProgramDayId to $newProgramDayId")
+                    }
+                }
+            }
+
+            // 7) Persist exercises remapped to real day IDs
             exercisesByTempDayId.forEach { (tempId, list) ->
                 val newDayId = newDays[tempId] ?: return@forEach
                 val mapped = list.sortedBy { it.orderIndex }.mapIndexed { idx, ex ->
@@ -350,6 +399,8 @@ class ProgramRepository @Inject constructor(
                 programExerciseDao.insertProgramExercises(mapped)
                 Log.d("ProgramRepository", "replaceProgramStructure: dayTempId=$tempId -> newDayId=$newDayId exercises=${mapped.size}")
             }
+
+            Log.d("ProgramRepository", "replaceProgramStructure: Updated ${existingCompletedWorkouts.size} completed workouts to preserve completion history")
         }
     }
     
