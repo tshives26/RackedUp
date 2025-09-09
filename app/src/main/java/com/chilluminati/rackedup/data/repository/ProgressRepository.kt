@@ -306,6 +306,7 @@ class ProgressRepository @Inject constructor(
     /**
      * Check for strength-based personal records for an exercise
      * Only creates ONE PR per exercise per workout (the most significant one)
+     * PRs are only created when they are truly new achievements (first time achieving that performance)
      */
     private suspend fun checkStrengthPRsForExercise(
         sets: List<ExerciseSet>, 
@@ -324,12 +325,18 @@ class ProgressRepository @Inject constructor(
         // Check each PR type and determine which ones are actually new PRs
         val potentialPRs = mutableListOf<PersonalRecord>()
         
-        // 1. Volume PR check
+        // 1. Volume PR check - only if this exact performance hasn't been achieved before
         bestVolumeSet?.let { set ->
             val volume = set.weight!! * set.reps!!
             val existingVolumePR = existingPRs.find { it.recordType == "Volume" }
             
-            if (existingVolumePR == null || volume > (existingVolumePR.volume ?: 0.0)) {
+            // Check if this exact weight/reps combination has been achieved before
+            val hasBeenAchieved = personalRecordDao.hasVolumePerformanceBeenAchieved(
+                exercise.id, set.weight!!, set.reps!!
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingVolumePR == null || volume > (existingVolumePR.volume ?: 0.0))) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Volume",
@@ -346,11 +353,17 @@ class ProgressRepository @Inject constructor(
             }
         }
         
-        // 2. Max Weight PR check
+        // 2. Max Weight PR check - only if this exact weight hasn't been achieved before
         bestMaxWeightSet?.let { set ->
             val existingMaxWeightPR = existingPRs.find { it.recordType == "Max Weight" }
             
-            if (existingMaxWeightPR == null || set.weight!! > (existingMaxWeightPR.weight ?: 0.0)) {
+            // Check if this exact weight has been achieved before
+            val hasBeenAchieved = personalRecordDao.hasMaxWeightPerformanceBeenAchieved(
+                exercise.id, set.weight!!
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingMaxWeightPR == null || set.weight!! > (existingMaxWeightPR.weight ?: 0.0))) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Max Weight",
@@ -366,12 +379,18 @@ class ProgressRepository @Inject constructor(
             }
         }
         
-        // 3. Estimated 1RM PR check
+        // 3. Estimated 1RM PR check - only if this exact 1RM hasn't been achieved before
         best1RMSet?.let { set ->
             val estimated1RM = calculateOneRepMax(set.weight!!, set.reps!!, set.rpe)
             val existing1RMPR = existingPRs.find { it.recordType == "1RM" }
             
-            if (existing1RMPR == null || estimated1RM > (existing1RMPR.estimated1RM ?: 0.0)) {
+            // Check if this exact 1RM has been achieved before
+            val hasBeenAchieved = personalRecordDao.has1RMPerformanceBeenAchieved(
+                exercise.id, estimated1RM
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existing1RMPR == null || estimated1RM > (existing1RMPR.estimated1RM ?: 0.0))) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "1RM",
@@ -402,6 +421,7 @@ class ProgressRepository @Inject constructor(
     /**
      * Check for cardio-based personal records (Distance, Duration, Speed) for an exercise
      * Only creates ONE PR per exercise per workout (the most significant one)
+     * PRs are only created when they are truly new achievements (first time achieving that performance)
      */
     private suspend fun checkCardioPRsForExercise(
         sets: List<ExerciseSet>, 
@@ -421,11 +441,17 @@ class ProgressRepository @Inject constructor(
             it.distance > 0 && it.durationSeconds > 0 
         }.maxByOrNull { it.distance!! / (it.durationSeconds!! / 3600.0) }
         
-        // 1. Distance PR - only if this is the best distance set
+        // 1. Distance PR - only if this exact distance hasn't been achieved before
         bestDistanceSet?.let { set ->
             val existingDistancePR = existingPRs.find { it.recordType == "Distance" }
             
-            if (existingDistancePR == null || set.distance!! > (existingDistancePR.distance ?: 0.0)) {
+            // Check if this exact distance has been achieved before
+            val hasBeenAchieved = personalRecordDao.hasDistancePerformanceBeenAchieved(
+                exercise.id, set.distance!!
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingDistancePR == null || set.distance!! > (existingDistancePR.distance ?: 0.0))) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Distance",
@@ -441,11 +467,17 @@ class ProgressRepository @Inject constructor(
             }
         }
         
-        // 2. Duration PR - only if this is the best duration set
+        // 2. Duration PR - only if this exact duration hasn't been achieved before
         bestDurationSet?.let { set ->
             val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
             
-            if (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0)) {
+            // Check if this exact duration has been achieved before
+            val hasBeenAchieved = personalRecordDao.hasDurationPerformanceBeenAchieved(
+                exercise.id, set.durationSeconds!!
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0))) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Duration",
@@ -461,7 +493,7 @@ class ProgressRepository @Inject constructor(
             }
         }
         
-        // 3. Speed PR - only if this is the best speed set
+        // 3. Speed PR - only if this exact speed hasn't been achieved before
         bestSpeedSet?.let { set ->
             val speed = set.distance!! / (set.durationSeconds!! / 3600.0) // km/h or mph
             val existingSpeedPR = existingPRs.find { it.recordType == "Speed" }
@@ -469,7 +501,14 @@ class ProgressRepository @Inject constructor(
                 existingSpeedPR.distance / (existingSpeedPR.durationSeconds / 3600.0)
             } else null
             
-            if (existingSpeed == null || speed > existingSpeed) {
+            // For speed, we need to check if this exact distance/duration combination has been achieved
+            // Since we don't have a direct speed check, we'll check if the exact distance and duration combination exists
+            val hasBeenAchieved = existingSpeedPR != null && 
+                existingSpeedPR.distance == set.distance && 
+                existingSpeedPR.durationSeconds == set.durationSeconds
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingSpeed == null || speed > existingSpeed)) {
                 potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Speed",
@@ -499,6 +538,7 @@ class ProgressRepository @Inject constructor(
     /**
      * Check for isometric-based personal records (Duration) for an exercise
      * Only creates ONE PR per exercise per workout
+     * PRs are only created when they are truly new achievements (first time achieving that performance)
      */
     private suspend fun checkIsometricPRsForExercise(
         sets: List<ExerciseSet>, 
@@ -513,7 +553,13 @@ class ProgressRepository @Inject constructor(
         bestDurationSet?.let { set ->
             val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
             
-            if (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0)) {
+            // Check if this exact duration has been achieved before
+            val hasBeenAchieved = personalRecordDao.hasDurationPerformanceBeenAchieved(
+                exercise.id, set.durationSeconds!!
+            ) > 0
+            
+            // Only create PR if it's better than existing AND hasn't been achieved before
+            if (!hasBeenAchieved && (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0))) {
                 val newPR = PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Duration",
@@ -831,6 +877,51 @@ class ProgressRepository @Inject constructor(
                         muscleGroups = estimatedMuscleGroups
                     )
                 }.sortedBy { it.date }
+            }
+        }
+    }
+    
+    /**
+     * Debug method to check if a specific performance has been achieved before
+     * This can be used for testing and verification
+     */
+    suspend fun hasPerformanceBeenAchievedBefore(
+        exerciseId: Long,
+        recordType: String,
+        weight: Double? = null,
+        reps: Int? = null,
+        distance: Double? = null,
+        durationSeconds: Int? = null,
+        estimated1RM: Double? = null
+    ): Boolean {
+        return withContext(ioDispatcher) {
+            when (recordType) {
+                "Volume" -> {
+                    if (weight != null && reps != null) {
+                        personalRecordDao.hasVolumePerformanceBeenAchieved(exerciseId, weight, reps) > 0
+                    } else false
+                }
+                "Max Weight" -> {
+                    if (weight != null) {
+                        personalRecordDao.hasMaxWeightPerformanceBeenAchieved(exerciseId, weight) > 0
+                    } else false
+                }
+                "1RM" -> {
+                    if (estimated1RM != null) {
+                        personalRecordDao.has1RMPerformanceBeenAchieved(exerciseId, estimated1RM) > 0
+                    } else false
+                }
+                "Distance" -> {
+                    if (distance != null) {
+                        personalRecordDao.hasDistancePerformanceBeenAchieved(exerciseId, distance) > 0
+                    } else false
+                }
+                "Duration" -> {
+                    if (durationSeconds != null) {
+                        personalRecordDao.hasDurationPerformanceBeenAchieved(exerciseId, durationSeconds) > 0
+                    } else false
+                }
+                else -> false
             }
         }
     }

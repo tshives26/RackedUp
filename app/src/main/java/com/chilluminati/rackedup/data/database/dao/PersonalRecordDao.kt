@@ -145,6 +145,63 @@ interface PersonalRecordDao {
         ORDER BY pr.exercise_id
     """)
     suspend fun getUniquePersonalRecords(): List<PersonalRecord>
+
+    /**
+     * Check if a specific volume performance has been achieved before for an exercise
+     * This prevents duplicate PRs when the same weight/reps combination is lifted again
+     */
+    @Query("""
+        SELECT COUNT(*) FROM personal_records 
+        WHERE exercise_id = :exerciseId 
+        AND record_type = 'Volume' 
+        AND weight = :weight 
+        AND reps = :reps
+    """)
+    suspend fun hasVolumePerformanceBeenAchieved(exerciseId: Long, weight: Double, reps: Int): Int
+
+    /**
+     * Check if a specific max weight performance has been achieved before for an exercise
+     */
+    @Query("""
+        SELECT COUNT(*) FROM personal_records 
+        WHERE exercise_id = :exerciseId 
+        AND record_type = 'Max Weight' 
+        AND weight = :weight
+    """)
+    suspend fun hasMaxWeightPerformanceBeenAchieved(exerciseId: Long, weight: Double): Int
+
+    /**
+     * Check if a specific 1RM performance has been achieved before for an exercise
+     */
+    @Query("""
+        SELECT COUNT(*) FROM personal_records 
+        WHERE exercise_id = :exerciseId 
+        AND record_type = '1RM' 
+        AND estimated_1rm = :estimated1RM
+    """)
+    suspend fun has1RMPerformanceBeenAchieved(exerciseId: Long, estimated1RM: Double): Int
+
+    /**
+     * Check if a specific distance performance has been achieved before for an exercise
+     */
+    @Query("""
+        SELECT COUNT(*) FROM personal_records 
+        WHERE exercise_id = :exerciseId 
+        AND record_type = 'Distance' 
+        AND distance = :distance
+    """)
+    suspend fun hasDistancePerformanceBeenAchieved(exerciseId: Long, distance: Double): Int
+
+    /**
+     * Check if a specific duration performance has been achieved before for an exercise
+     */
+    @Query("""
+        SELECT COUNT(*) FROM personal_records 
+        WHERE exercise_id = :exerciseId 
+        AND record_type = 'Duration' 
+        AND duration_seconds = :durationSeconds
+    """)
+    suspend fun hasDurationPerformanceBeenAchieved(exerciseId: Long, durationSeconds: Int): Int
 }
 
 
