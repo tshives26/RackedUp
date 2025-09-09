@@ -60,6 +60,7 @@ class WorkoutDetailViewModel @Inject constructor(
                     // Load exercise details and sets for each workout exercise
                     val exerciseDetails = mutableMapOf<Long, Exercise>()
                     val exerciseSets = mutableMapOf<Long, List<ExerciseSet>>()
+                    val completedWorkoutExercises = mutableListOf<WorkoutExercise>()
                     
                     workoutExercises.forEach { workoutExercise ->
                         // Load exercise details
@@ -69,7 +70,12 @@ class WorkoutDetailViewModel @Inject constructor(
                         
                         // Load sets for this exercise
                         workoutRepository.getExerciseSets(workoutExercise.id).take(1).collect { sets ->
-                            exerciseSets[workoutExercise.id] = sets
+                            // Only include exercises that have at least one completed set
+                            val completedSets = sets.filter { it.isCompleted }
+                            if (completedSets.isNotEmpty()) {
+                                exerciseSets[workoutExercise.id] = completedSets
+                                completedWorkoutExercises.add(workoutExercise)
+                            }
                         }
                     }
                     
@@ -78,7 +84,7 @@ class WorkoutDetailViewModel @Inject constructor(
                     
                     _uiState.value = _uiState.value.copy(
                         workout = workout,
-                        workoutExercises = workoutExercises,
+                        workoutExercises = completedWorkoutExercises,
                         exerciseDetails = exerciseDetails,
                         exerciseSets = exerciseSets,
                         personalRecords = personalRecords,
