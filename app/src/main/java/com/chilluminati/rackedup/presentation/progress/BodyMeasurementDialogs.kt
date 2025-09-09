@@ -1,5 +1,6 @@
 package com.chilluminati.rackedup.presentation.progress
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,7 +29,7 @@ fun AddBodyMeasurementDialog(
     onDismiss: () -> Unit,
     onMeasurementAdded: () -> Unit,
     weightUnit: String,
-    distanceUnit: String,
+    measurementsUnit: String,
     viewModel: BodyMeasurementViewModel = hiltViewModel()
 ) {
     var selectedMeasurementType by remember { mutableStateOf("Weight") }
@@ -75,7 +76,7 @@ fun AddBodyMeasurementDialog(
     
     val unit = when (selectedMeasurementType) {
         "Weight" -> weightUnit
-        "Circumference" -> distanceUnit
+        "Circumference" -> measurementsUnit
         else -> "%"
     }
 
@@ -96,19 +97,41 @@ fun AddBodyMeasurementDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Measurement Type
-                OutlinedTextField(
-                    value = selectedMeasurementType,
-                    onValueChange = { },
-                    label = { Text("Measurement Type") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showMeasurementTypeDialog = true }) {
-                            Icon(Icons.Default.ArrowDropDown, "Select type")
+                ExposedDropdownMenuBox(
+                    expanded = showMeasurementTypeDialog,
+                    onExpandedChange = { showMeasurementTypeDialog = !showMeasurementTypeDialog }
+                ) {
+                    OutlinedTextField(
+                        value = selectedMeasurementType,
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Measurement Type") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = showMeasurementTypeDialog
+                            )
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = AppTextFieldDefaults.outlinedColors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showMeasurementTypeDialog,
+                        onDismissRequest = { showMeasurementTypeDialog = false }
+                    ) {
+                        measurementTypes.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    selectedMeasurementType = type
+                                    selectedBodyPart = null // Reset body part when type changes
+                                    showMeasurementTypeDialog = false
+                                }
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = AppTextFieldDefaults.outlinedColors()
-                )
+                    }
+                }
                 
                 // Value
                 OutlinedTextField(
@@ -123,35 +146,77 @@ fun AddBodyMeasurementDialog(
                 
                 // Body Part (for circumference)
                 if (selectedMeasurementType == "Circumference") {
-                    OutlinedTextField(
-                        value = selectedBodyPart ?: "",
-                        onValueChange = { },
-                        label = { Text("Body Part") },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { showBodyPartDialog = true }) {
-                                Icon(Icons.Default.ArrowDropDown, "Select body part")
+                    ExposedDropdownMenuBox(
+                        expanded = showBodyPartDialog,
+                        onExpandedChange = { showBodyPartDialog = !showBodyPartDialog }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedBodyPart ?: "",
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text("Body Part") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                    expanded = showBodyPartDialog
+                                )
+                            },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = AppTextFieldDefaults.outlinedColors()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showBodyPartDialog,
+                            onDismissRequest = { showBodyPartDialog = false }
+                        ) {
+                            bodyParts.forEach { part ->
+                                DropdownMenuItem(
+                                    text = { Text(part) },
+                                    onClick = {
+                                        selectedBodyPart = part
+                                        showBodyPartDialog = false
+                                    }
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = AppTextFieldDefaults.outlinedColors()
-                    )
+                        }
+                    }
                 }
                 
                 // Measurement Method
-                OutlinedTextField(
-                    value = selectedMeasurementMethod ?: "",
-                    onValueChange = { },
-                    label = { Text("Measurement Method (Optional)") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showMeasurementMethodDialog = true }) {
-                            Icon(Icons.Default.ArrowDropDown, "Select method")
+                ExposedDropdownMenuBox(
+                    expanded = showMeasurementMethodDialog,
+                    onExpandedChange = { showMeasurementMethodDialog = !showMeasurementMethodDialog }
+                ) {
+                    OutlinedTextField(
+                        value = selectedMeasurementMethod ?: "",
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Measurement Method (Optional)") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = showMeasurementMethodDialog
+                            )
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = AppTextFieldDefaults.outlinedColors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showMeasurementMethodDialog,
+                        onDismissRequest = { showMeasurementMethodDialog = false }
+                    ) {
+                        measurementMethods.forEach { method ->
+                            DropdownMenuItem(
+                                text = { Text(method) },
+                                onClick = {
+                                    selectedMeasurementMethod = method
+                                    showMeasurementMethodDialog = false
+                                }
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = AppTextFieldDefaults.outlinedColors()
-                )
+                    }
+                }
                 
                 // Date
                 OutlinedTextField(
@@ -210,79 +275,6 @@ fun AddBodyMeasurementDialog(
         }
     )
     
-    // Measurement Type Dialog
-    if (showMeasurementTypeDialog) {
-        AlertDialog(
-            onDismissRequest = { showMeasurementTypeDialog = false },
-            title = { Text("Select Measurement Type") },
-            text = {
-                Column {
-                    measurementTypes.forEach { type ->
-                        TextButton(
-                            onClick = {
-                                selectedMeasurementType = type
-                                selectedBodyPart = null // Reset body part when type changes
-                                showMeasurementTypeDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(type)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
-    
-    // Body Part Dialog
-    if (showBodyPartDialog) {
-        AlertDialog(
-            onDismissRequest = { showBodyPartDialog = false },
-            title = { Text("Select Body Part") },
-            text = {
-                Column {
-                    bodyParts.forEach { part ->
-                        TextButton(
-                            onClick = {
-                                selectedBodyPart = part
-                                showBodyPartDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(part)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
-    
-    // Measurement Method Dialog
-    if (showMeasurementMethodDialog) {
-        AlertDialog(
-            onDismissRequest = { showMeasurementMethodDialog = false },
-            title = { Text("Select Measurement Method") },
-            text = {
-                Column {
-                    measurementMethods.forEach { method ->
-                        TextButton(
-                            onClick = {
-                                selectedMeasurementMethod = method
-                                showMeasurementMethodDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(method)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
-    
     // Date Picker Dialog
     if (showDatePicker) {
         DatePickerDialog(
@@ -318,7 +310,7 @@ fun EditBodyMeasurementDialog(
     onDismiss: () -> Unit,
     onMeasurementUpdated: () -> Unit,
     weightUnit: String,
-    distanceUnit: String,
+    measurementsUnit: String,
     viewModel: BodyMeasurementViewModel = hiltViewModel()
 ) {
     var selectedMeasurementType by remember { mutableStateOf(measurement.measurementType) }
@@ -365,7 +357,7 @@ fun EditBodyMeasurementDialog(
     
     val unit = when (selectedMeasurementType) {
         "Weight" -> weightUnit
-        "Circumference" -> distanceUnit
+        "Circumference" -> measurementsUnit
         else -> "%"
     }
 
@@ -386,19 +378,41 @@ fun EditBodyMeasurementDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Measurement Type
-                OutlinedTextField(
-                    value = selectedMeasurementType,
-                    onValueChange = { },
-                    label = { Text("Measurement Type") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showMeasurementTypeDialog = true }) {
-                            Icon(Icons.Default.ArrowDropDown, "Select type")
+                ExposedDropdownMenuBox(
+                    expanded = showMeasurementTypeDialog,
+                    onExpandedChange = { showMeasurementTypeDialog = !showMeasurementTypeDialog }
+                ) {
+                    OutlinedTextField(
+                        value = selectedMeasurementType,
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Measurement Type") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = showMeasurementTypeDialog
+                            )
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = AppTextFieldDefaults.outlinedColors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showMeasurementTypeDialog,
+                        onDismissRequest = { showMeasurementTypeDialog = false }
+                    ) {
+                        measurementTypes.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    selectedMeasurementType = type
+                                    selectedBodyPart = null // Reset body part when type changes
+                                    showMeasurementTypeDialog = false
+                                }
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = AppTextFieldDefaults.outlinedColors()
-                )
+                    }
+                }
                 
                 // Value
                 OutlinedTextField(
@@ -413,35 +427,77 @@ fun EditBodyMeasurementDialog(
                 
                 // Body Part (for circumference)
                 if (selectedMeasurementType == "Circumference") {
-                    OutlinedTextField(
-                        value = selectedBodyPart ?: "",
-                        onValueChange = { },
-                        label = { Text("Body Part") },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { showBodyPartDialog = true }) {
-                                Icon(Icons.Default.ArrowDropDown, "Select body part")
+                    ExposedDropdownMenuBox(
+                        expanded = showBodyPartDialog,
+                        onExpandedChange = { showBodyPartDialog = !showBodyPartDialog }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedBodyPart ?: "",
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text("Body Part") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                    expanded = showBodyPartDialog
+                                )
+                            },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = AppTextFieldDefaults.outlinedColors()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showBodyPartDialog,
+                            onDismissRequest = { showBodyPartDialog = false }
+                        ) {
+                            bodyParts.forEach { part ->
+                                DropdownMenuItem(
+                                    text = { Text(part) },
+                                    onClick = {
+                                        selectedBodyPart = part
+                                        showBodyPartDialog = false
+                                    }
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = AppTextFieldDefaults.outlinedColors()
-                    )
+                        }
+                    }
                 }
                 
                 // Measurement Method
-                OutlinedTextField(
-                    value = selectedMeasurementMethod ?: "",
-                    onValueChange = { },
-                    label = { Text("Measurement Method (Optional)") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = { showMeasurementMethodDialog = true }) {
-                            Icon(Icons.Default.ArrowDropDown, "Select method")
+                ExposedDropdownMenuBox(
+                    expanded = showMeasurementMethodDialog,
+                    onExpandedChange = { showMeasurementMethodDialog = !showMeasurementMethodDialog }
+                ) {
+                    OutlinedTextField(
+                        value = selectedMeasurementMethod ?: "",
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Measurement Method (Optional)") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = showMeasurementMethodDialog
+                            )
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = AppTextFieldDefaults.outlinedColors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showMeasurementMethodDialog,
+                        onDismissRequest = { showMeasurementMethodDialog = false }
+                    ) {
+                        measurementMethods.forEach { method ->
+                            DropdownMenuItem(
+                                text = { Text(method) },
+                                onClick = {
+                                    selectedMeasurementMethod = method
+                                    showMeasurementMethodDialog = false
+                                }
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = AppTextFieldDefaults.outlinedColors()
-                )
+                    }
+                }
                 
                 // Date
                 OutlinedTextField(
@@ -500,79 +556,6 @@ fun EditBodyMeasurementDialog(
             }
         }
     )
-    
-    // Measurement Type Dialog
-    if (showMeasurementTypeDialog) {
-        AlertDialog(
-            onDismissRequest = { showMeasurementTypeDialog = false },
-            title = { Text("Select Measurement Type") },
-            text = {
-                Column {
-                    measurementTypes.forEach { type ->
-                        TextButton(
-                            onClick = {
-                                selectedMeasurementType = type
-                                selectedBodyPart = null // Reset body part when type changes
-                                showMeasurementTypeDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(type)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
-    
-    // Body Part Dialog
-    if (showBodyPartDialog) {
-        AlertDialog(
-            onDismissRequest = { showBodyPartDialog = false },
-            title = { Text("Select Body Part") },
-            text = {
-                Column {
-                    bodyParts.forEach { part ->
-                        TextButton(
-                            onClick = {
-                                selectedBodyPart = part
-                                showBodyPartDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(part)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
-    
-    // Measurement Method Dialog
-    if (showMeasurementMethodDialog) {
-        AlertDialog(
-            onDismissRequest = { showMeasurementMethodDialog = false },
-            title = { Text("Select Measurement Method") },
-            text = {
-                Column {
-                    measurementMethods.forEach { method ->
-                        TextButton(
-                            onClick = {
-                                selectedMeasurementMethod = method
-                                showMeasurementMethodDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(method)
-                        }
-                    }
-                }
-            },
-            confirmButton = { }
-        )
-    }
     
     // Date Picker Dialog
     if (showDatePicker) {

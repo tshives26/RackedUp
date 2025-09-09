@@ -38,7 +38,7 @@ fun BodyMeasurementScreen(
     val circumferenceMeasurements by viewModel.circumferenceMeasurements.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val weightUnit by viewModel.weightUnit.collectAsStateWithLifecycle()
-    val distanceUnit by viewModel.distanceUnit.collectAsStateWithLifecycle()
+    val measurementsUnit by viewModel.measurementsUnit.collectAsStateWithLifecycle()
 
     var showAddMeasurementDialog by remember { mutableStateOf(false) }
     var selectedMeasurement by remember { mutableStateOf<com.chilluminati.rackedup.data.database.entity.BodyMeasurement?>(null) }
@@ -179,7 +179,7 @@ fun BodyMeasurementScreen(
                     viewModel.loadMeasurements()
                 },
                 weightUnit = weightUnit,
-                distanceUnit = distanceUnit
+                measurementsUnit = measurementsUnit
             )
         }
 
@@ -193,7 +193,7 @@ fun BodyMeasurementScreen(
                     viewModel.loadMeasurements()
                 },
                 weightUnit = weightUnit,
-                distanceUnit = distanceUnit
+                measurementsUnit = measurementsUnit
             )
         }
     }

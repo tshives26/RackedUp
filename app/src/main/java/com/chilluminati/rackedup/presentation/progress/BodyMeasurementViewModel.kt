@@ -63,6 +63,13 @@ class BodyMeasurementViewModel @Inject constructor(
         initialValue = "cm"
     )
 
+    // Measurements unit preference
+    val measurementsUnit: StateFlow<String> = settingsRepository.measurementsUnit.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "in"
+    )
+
     init {
         loadMeasurements()
     }
