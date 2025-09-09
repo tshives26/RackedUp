@@ -33,6 +33,8 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chilluminati.rackedup.R
@@ -318,51 +320,113 @@ private fun ProgressHeader(
                   volumeBasedPersonalRecords.isNotEmpty()
     
     var selectedSection by remember { mutableIntStateOf(0) }
+    var isMinimized by remember { mutableStateOf(true) }
     val sections = remember { listOf("This Week", "Lifetime") }
     
-    GlassmorphismCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        backgroundAlpha = 0.15f
-    ) {
+    if (isMinimized) {
+        // Simple column without card styling when minimized
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Section selector with swipe indicator
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = sections[selectedSection],
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                // Swipe indicator
+            // Section selector with swipe indicator and minimize button
+            if (isMinimized) {
+                // Centered layout for minimized state
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    sections.forEachIndexed { index, _ ->
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(
-                                    color = if (index == selectedSection) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                    shape = CircleShape
+                    Text(
+                        text = "Quick Stats",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    // Minimize/Expand button
+                    if (hasData) {
+                        IconButton(
+                            onClick = { isMinimized = !isMinimized },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ExpandMore,
+                                contentDescription = "Expand stats",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Original layout for expanded state
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = sections[selectedSection],
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Swipe indicator
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            sections.forEachIndexed { index, _ ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            color = if (index == selectedSection) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                            shape = CircleShape
+                                        )
                                 )
-                        )
+                            }
+                        }
+                        
+                        // Minimize/Expand button
+                        if (hasData) {
+                            IconButton(
+                                onClick = { isMinimized = !isMinimized }
+                            ) {
+                                AnimatedContent(
+                                    targetState = isMinimized,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(200)) + 
+                                        slideInVertically(animationSpec = tween(200)) togetherWith
+                                        fadeOut(animationSpec = tween(200)) + 
+                                        slideOutVertically(animationSpec = tween(200))
+                                    },
+                                    label = "minimize_icon_animation"
+                                ) { minimized ->
+                                    Icon(
+                                        imageVector = if (minimized) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+                                        contentDescription = if (minimized) "Expand stats" else "Minimize stats",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(if (isMinimized) 4.dp else 8.dp))
             
             if (!hasData) {
                 Column(
@@ -387,19 +451,163 @@ private fun ProgressHeader(
                     )
                 }
             } else {
-                // Swipeable content
-                val pagerState = rememberPagerState { sections.size }
-                LaunchedEffect(pagerState.currentPage) {
-                    selectedSection = pagerState.currentPage
-                }
-                HorizontalPager(
-                    state = pagerState
-                                 ) { page ->
-                     when (page) {
-                         0 -> ThisWeekSection(weeklyStats, currentStreak, weightUnit)
-                         1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
+                // Animated content with smooth minimize/expand transition
+                AnimatedVisibility(
+                    visible = !isMinimized,
+                    enter = expandVertically(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    ) + fadeIn(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    ),
+                    exit = shrinkVertically(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    ) + fadeOut(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    )
+                ) {
+                    // Swipeable content
+                    val pagerState = rememberPagerState { sections.size }
+                    LaunchedEffect(pagerState.currentPage) {
+                        selectedSection = pagerState.currentPage
+                    }
+                    HorizontalPager(
+                        state = pagerState
+                                     ) { page ->
+                         when (page) {
+                             0 -> ThisWeekSection(weeklyStats, currentStreak, weightUnit)
+                             1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
+                         }
                      }
-                 }
+                }
+            }
+        }
+    } else {
+        // Full card styling when expanded
+        GlassmorphismCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            backgroundAlpha = 0.15f
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                // Section selector with swipe indicator and minimize button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = sections[selectedSection],
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Swipe indicator
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            sections.forEachIndexed { index, _ ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            color = if (index == selectedSection) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                            shape = CircleShape
+                                        )
+                                )
+                            }
+                        }
+                        
+                        // Minimize/Expand button
+                        if (hasData) {
+                            IconButton(
+                                onClick = { isMinimized = !isMinimized }
+                            ) {
+                                AnimatedContent(
+                                    targetState = isMinimized,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(200)) + 
+                                        slideInVertically(animationSpec = tween(200)) togetherWith
+                                        fadeOut(animationSpec = tween(200)) + 
+                                        slideOutVertically(animationSpec = tween(200))
+                                    },
+                                    label = "minimize_icon_animation"
+                                ) { minimized ->
+                                    Icon(
+                                        imageVector = if (minimized) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+                                        contentDescription = if (minimized) "Expand stats" else "Minimize stats",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                if (!hasData) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No progress data yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = "Complete your first workout to see your progress",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                } else {
+                    // Animated content with smooth minimize/expand transition
+                    AnimatedVisibility(
+                        visible = !isMinimized,
+                        enter = expandVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ),
+                        exit = shrinkVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeOut(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        )
+                    ) {
+                        // Swipeable content
+                        val pagerState = rememberPagerState { sections.size }
+                        LaunchedEffect(pagerState.currentPage) {
+                            selectedSection = pagerState.currentPage
+                        }
+                        HorizontalPager(
+                            state = pagerState
+                                         ) { page ->
+                             when (page) {
+                                 0 -> ThisWeekSection(weeklyStats, currentStreak, weightUnit)
+                                 1 -> LifetimeSection(lifetimeStats, volumeBasedPersonalRecords, personalRecords, weightUnit)
+                             }
+                         }
+                    }
+                }
             }
         }
     }
