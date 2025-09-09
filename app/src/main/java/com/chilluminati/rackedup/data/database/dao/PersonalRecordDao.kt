@@ -110,6 +110,41 @@ interface PersonalRecordDao {
         )
     """)
     suspend fun cleanupDuplicateVolumeRecords()
+    
+    /**
+     * Get unique personal records across all workouts
+     * Returns only one PR per exercise (the best one) to avoid duplicates
+     * Prioritizes: Volume > Max Weight > 1RM > Distance > Duration > Speed
+     */
+    @Query("""
+        SELECT pr.* FROM personal_records pr
+        WHERE pr.id IN (
+            SELECT MAX(pr2.id)
+            FROM personal_records pr2
+            WHERE pr2.exercise_id = pr.exercise_id
+            AND pr2.record_type = pr.record_type
+            GROUP BY pr2.exercise_id, pr2.record_type
+        )
+        AND pr.id IN (
+            SELECT CASE 
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Volume') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Volume')
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Max Weight') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Max Weight')
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = '1RM') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = '1RM')
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Distance') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Distance')
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Duration') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Duration')
+                WHEN EXISTS(SELECT 1 FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Speed') 
+                THEN (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id AND record_type = 'Speed')
+                ELSE (SELECT MAX(id) FROM personal_records WHERE exercise_id = pr.exercise_id)
+            END
+        )
+        ORDER BY pr.exercise_id
+    """)
+    suspend fun getUniquePersonalRecords(): List<PersonalRecord>
 }
 
 

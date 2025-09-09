@@ -119,6 +119,16 @@ class ProgressRepository @Inject constructor(
     }
     
     /**
+     * Get unique personal records across all workouts
+     * Returns only one PR per exercise (the best one) to avoid duplicates
+     */
+    suspend fun getUniquePersonalRecords(): List<PersonalRecord> {
+        return withContext(ioDispatcher) {
+            personalRecordDao.getUniquePersonalRecords()
+        }
+    }
+    
+    /**
      * Get volume-based personal records for all exercises
      * Returns the highest volume (weight × reps) for each exercise
      */

@@ -141,8 +141,9 @@ class ProgressViewModel @Inject constructor(
                 
                 _measurementData.value = measurementMap
 
-                // Load personal records
-                _personalRecords.value = records.sortedByDescending { it.achievedAt }
+                // Load unique personal records (one per exercise to avoid duplicates)
+                val uniqueRecords = progressRepository.getUniquePersonalRecords()
+                _personalRecords.value = uniqueRecords.sortedByDescending { it.achievedAt }
 
                 // Load volume-based personal records
                 val volumeRecords = progressRepository.getVolumeBasedPersonalRecords()
@@ -527,9 +528,9 @@ class ProgressViewModel @Inject constructor(
     fun refreshPersonalRecords() {
         viewModelScope.launch {
             try {
-                // Load personal records
-                val records = progressRepository.getPersonalRecords()
-                _personalRecords.value = records.sortedByDescending { it.achievedAt }
+                // Load unique personal records (one per exercise to avoid duplicates)
+                val uniqueRecords = progressRepository.getUniquePersonalRecords()
+                _personalRecords.value = uniqueRecords.sortedByDescending { it.achievedAt }
 
                 // Load volume-based personal records
                 val volumeRecords = progressRepository.getVolumeBasedPersonalRecords()
