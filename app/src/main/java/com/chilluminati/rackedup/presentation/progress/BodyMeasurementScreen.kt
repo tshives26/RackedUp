@@ -25,7 +25,6 @@ import java.util.*
 /**
  * Comprehensive body measurement tracking screen
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BodyMeasurementScreen(
     modifier: Modifier = Modifier,
@@ -51,180 +50,181 @@ fun BodyMeasurementScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddMeasurementDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Measurement"
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Header section
+        item {
+            BodyMeasurementHeader(
+                uiState = uiState,
+                onAddMeasurement = { showAddMeasurementDialog = true }
+            )
+        }
+
+        if (!uiState.hasData && !isLoading) {
+            // Empty state
+            item {
+                BodyMeasurementEmptyState(
+                    onAddMeasurement = { showAddMeasurementDialog = true }
                 )
             }
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Header section
+        } else {
+            // Quick stats cards
             item {
-                BodyMeasurementHeader(uiState = uiState)
+                BodyMeasurementQuickStats(
+                    uiState = uiState,
+                    weightUnit = weightUnit
+                )
             }
 
-            if (!uiState.hasData && !isLoading) {
-                // Empty state
+            // Weight tracking section
+            if (weightMeasurements.isNotEmpty()) {
                 item {
-                    BodyMeasurementEmptyState(
-                        onAddMeasurement = { showAddMeasurementDialog = true }
+                    BodyMeasurementSection(
+                        title = "Weight Tracking",
+                        icon = Icons.Default.MonitorWeight,
+                        description = "Track your weight changes over time"
                     )
                 }
-            } else {
-                // Quick stats cards
+                
                 item {
-                    BodyMeasurementQuickStats(
-                        uiState = uiState,
+                    WeightChartCard(
+                        weightData = viewModel.getWeightChartData(),
                         weightUnit = weightUnit
                     )
                 }
+            }
 
-                // Weight tracking section
-                if (weightMeasurements.isNotEmpty()) {
-                    item {
-                        BodyMeasurementSection(
-                            title = "Weight Tracking",
-                            icon = Icons.Default.MonitorWeight,
-                            description = "Track your weight changes over time"
-                        )
-                    }
-                    
-                    item {
-                        WeightChartCard(
-                            weightData = viewModel.getWeightChartData(),
-                            weightUnit = weightUnit
-                        )
-                    }
+            // Body composition section
+            if (bodyCompositionMeasurements.isNotEmpty()) {
+                item {
+                    BodyMeasurementSection(
+                        title = "Body Composition",
+                        icon = Icons.Default.Analytics,
+                        description = "Monitor body fat and muscle mass"
+                    )
                 }
-
-                // Body composition section
-                if (bodyCompositionMeasurements.isNotEmpty()) {
-                    item {
-                        BodyMeasurementSection(
-                            title = "Body Composition",
-                            icon = Icons.Default.Analytics,
-                            description = "Monitor body fat and muscle mass"
-                        )
-                    }
-                    
-                    item {
-                        BodyCompositionChartCard(
-                            compositionData = viewModel.getBodyCompositionChartData()
-                        )
-                    }
+                
+                item {
+                    BodyCompositionChartCard(
+                        compositionData = viewModel.getBodyCompositionChartData()
+                    )
                 }
+            }
 
-                // Circumference measurements section
-                if (circumferenceMeasurements.isNotEmpty()) {
-                    item {
-                        BodyMeasurementSection(
-                            title = "Body Measurements",
-                            icon = Icons.Default.Straighten,
-                            description = "Track body part circumferences"
-                        )
-                    }
-                    
-                    item {
-                        CircumferenceChartCard(
-                            circumferenceData = viewModel.getCircumferenceChartData()
-                        )
-                    }
+            // Circumference measurements section
+            if (circumferenceMeasurements.isNotEmpty()) {
+                item {
+                    BodyMeasurementSection(
+                        title = "Body Measurements",
+                        icon = Icons.Default.Straighten,
+                        description = "Track body part circumferences"
+                    )
                 }
+                
+                item {
+                    CircumferenceChartCard(
+                        circumferenceData = viewModel.getCircumferenceChartData()
+                    )
+                }
+            }
 
-                // Recent measurements list
-                if (measurements.isNotEmpty()) {
-                    item {
-                        BodyMeasurementSection(
-                            title = "Recent Measurements",
-                            icon = Icons.Default.History,
-                            description = "Your latest body measurements"
-                        )
-                    }
-                    
-                    items(
-                        items = measurements.take(10),
-                        key = { it.id }
-                    ) { measurement ->
-                        BodyMeasurementCard(
-                            measurement = measurement,
-                            onEdit = { selectedMeasurement = measurement },
-                            onDelete = { viewModel.deleteMeasurement(measurement) }
-                        )
-                    }
+            // Recent measurements list
+            if (measurements.isNotEmpty()) {
+                item {
+                    BodyMeasurementSection(
+                        title = "Recent Measurements",
+                        icon = Icons.Default.History,
+                        description = "Your latest body measurements"
+                    )
+                }
+                
+                items(
+                    items = measurements.take(10),
+                    key = { it.id }
+                ) { measurement ->
+                    BodyMeasurementCard(
+                        measurement = measurement,
+                        onEdit = { selectedMeasurement = measurement },
+                        onDelete = { viewModel.deleteMeasurement(measurement) }
+                    )
                 }
             }
         }
+    }
 
-        // Add measurement dialog
-        if (showAddMeasurementDialog) {
-            AddBodyMeasurementDialog(
-                onDismiss = { showAddMeasurementDialog = false },
-                onMeasurementAdded = { 
-                    showAddMeasurementDialog = false
-                    viewModel.loadMeasurements()
-                },
-                weightUnit = weightUnit,
-                measurementsUnit = measurementsUnit
-            )
-        }
+    // Add measurement dialog
+    if (showAddMeasurementDialog) {
+        AddBodyMeasurementDialog(
+            onDismiss = { showAddMeasurementDialog = false },
+            onMeasurementAdded = { 
+                showAddMeasurementDialog = false
+                viewModel.loadMeasurements()
+            },
+            weightUnit = weightUnit,
+            measurementsUnit = measurementsUnit
+        )
+    }
 
-        // Edit measurement dialog
-        selectedMeasurement?.let { measurement ->
-            EditBodyMeasurementDialog(
-                measurement = measurement,
-                onDismiss = { selectedMeasurement = null },
-                onMeasurementUpdated = { 
-                    selectedMeasurement = null
-                    viewModel.loadMeasurements()
-                },
-                weightUnit = weightUnit,
-                measurementsUnit = measurementsUnit
-            )
-        }
+    // Edit measurement dialog
+    selectedMeasurement?.let { measurement ->
+        EditBodyMeasurementDialog(
+            measurement = measurement,
+            onDismiss = { selectedMeasurement = null },
+            onMeasurementUpdated = { 
+                selectedMeasurement = null
+                viewModel.loadMeasurements()
+            },
+            weightUnit = weightUnit,
+            measurementsUnit = measurementsUnit
+        )
     }
 }
 
 @Composable
-private fun BodyMeasurementHeader(uiState: BodyMeasurementUiState) {
-    Column(
+private fun BodyMeasurementHeader(
+    uiState: BodyMeasurementUiState,
+    onAddMeasurement: () -> Unit
+) {
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Body Measurements",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        if (uiState.hasData) {
-            Spacer(modifier = Modifier.height(4.dp))
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
-                text = "${uiState.totalMeasurements} measurements tracked",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Body Measurements",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
+            if (uiState.hasData) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${uiState.totalMeasurements} measurements tracked",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
+        if (uiState.hasData) {
+            IconButton(
+                onClick = onAddMeasurement,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Measurement",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -233,52 +233,11 @@ private fun BodyMeasurementHeader(uiState: BodyMeasurementUiState) {
 private fun BodyMeasurementEmptyState(
     onAddMeasurement: () -> Unit
 ) {
-    GlowingCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.tertiary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "No Body Measurements",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Start tracking your body measurements to monitor your fitness progress over time.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = onAddMeasurement,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add First Measurement")
-            }
-        }
-    }
+    FeaturePlaceholderCard(
+        title = "No Body Measurements",
+        description = "Start tracking your body measurements to monitor your fitness progress over time.",
+        icon = Icons.Default.Person
+    )
 }
 
 @Composable
