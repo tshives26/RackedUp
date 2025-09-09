@@ -100,6 +100,25 @@ class ProgressRepository @Inject constructor(
     }
     
     /**
+     * Get personal records achieved in a specific workout
+     */
+    suspend fun getPersonalRecordsForWorkout(workoutId: Long): List<PersonalRecord> {
+        return withContext(ioDispatcher) {
+            personalRecordDao.getPersonalRecordsForWorkout(workoutId)
+        }
+    }
+    
+    /**
+     * Get the best personal records achieved in a specific workout (one per exercise per record type)
+     * This ensures we only count unique PRs per exercise, not multiple PRs for the same exercise
+     */
+    suspend fun getBestPersonalRecordsForWorkout(workoutId: Long): List<PersonalRecord> {
+        return withContext(ioDispatcher) {
+            personalRecordDao.getBestPersonalRecordsForWorkout(workoutId)
+        }
+    }
+    
+    /**
      * Get volume-based personal records for all exercises
      * Returns the highest volume (weight × reps) for each exercise
      */
@@ -235,57 +254,73 @@ class ProgressRepository @Inject constructor(
             val exercises = exerciseDao.getAllExercisesList()
             val exerciseMap = exercises.associateBy { it.id }
             
-            // Check each set for potential new PRs
-            for (set in exerciseSets) {
-                if (!set.isCompleted) continue // Only check completed sets
-                
-                val workoutExercise = workoutExercises.find { it.id == set.workoutExerciseId }
-                if (workoutExercise != null) {
-                    val exerciseId = workoutExercise.exerciseId
-                    val exercise = exerciseMap[exerciseId]
+            // Group sets by exercise to avoid duplicate PRs for the same exercise
+            val setsByExercise = exerciseSets
+                .filter { it.isCompleted }
+                .groupBy { set ->
+                    val workoutExercise = workoutExercises.find { it.id == set.workoutExerciseId }
+                    workoutExercise?.exerciseId
+                }
+                .filterKeys { it != null }
+                .mapKeys { it.key!! }
+            
+            // Check each exercise for potential new PRs (only the best performance per exercise)
+            for ((exerciseId, sets) in setsByExercise) {
+                val exercise = exerciseMap[exerciseId]
+                if (exercise != null) {
+                    val existingPRs = personalRecordDao.getPersonalRecordsSync(exerciseId)
                     
-                    if (exercise != null) {
-                        val existingPRs = personalRecordDao.getPersonalRecordsSync(exerciseId)
-                        
-                        when (exercise.exerciseType) {
-                            "Strength" -> {
-                                checkStrengthPRs(set, exercise, existingPRs, workoutId)
-                            }
-                            "Cardio" -> {
-                                checkCardioPRs(set, exercise, existingPRs, workoutId)
-                            }
-                            "Isometric" -> {
-                                checkIsometricPRs(set, exercise, existingPRs, workoutId)
-                            }
-                            else -> {
-                                // Default to strength-based tracking for unknown types
-                                checkStrengthPRs(set, exercise, existingPRs, workoutId)
-                            }
+                    when (exercise.exerciseType) {
+                        "Strength" -> {
+                            checkStrengthPRsForExercise(sets, exercise, existingPRs, workoutId)
+                        }
+                        "Cardio" -> {
+                            checkCardioPRsForExercise(sets, exercise, existingPRs, workoutId)
+                        }
+                        "Isometric" -> {
+                            checkIsometricPRsForExercise(sets, exercise, existingPRs, workoutId)
+                        }
+                        else -> {
+                            // Default to strength-based tracking for unknown types
+                            checkStrengthPRsForExercise(sets, exercise, existingPRs, workoutId)
                         }
                     }
                 }
             }
+            
+            // Clean up any duplicate PRs that might have been created to ensure only 1 PR per exercise
+            cleanupDuplicatePRsForWorkout(workoutId)
         }
     }
     
     /**
-     * Check for strength-based personal records (Volume, 1RM, Max Weight)
+     * Check for strength-based personal records for an exercise
+     * Only creates ONE PR per exercise per workout (the most significant one)
      */
-    private suspend fun checkStrengthPRs(
-        set: ExerciseSet, 
+    private suspend fun checkStrengthPRsForExercise(
+        sets: List<ExerciseSet>, 
         exercise: Exercise, 
         existingPRs: List<PersonalRecord>, 
         workoutId: Long
     ) {
-        if (set.weight != null && set.reps != null && set.reps > 0) {
-            val newPRs = mutableListOf<PersonalRecord>()
-            
-            // 1. Volume PR (weight × reps)
-            val volume = set.weight * set.reps
+        val validSets = sets.filter { it.weight != null && it.reps != null && it.reps > 0 }
+        if (validSets.isEmpty()) return
+        
+        // Find the best performance for each PR type
+        val bestVolumeSet = validSets.maxByOrNull { it.weight!! * it.reps!! }
+        val bestMaxWeightSet = validSets.maxByOrNull { it.weight!! }
+        val best1RMSet = validSets.maxByOrNull { calculateOneRepMax(it.weight!!, it.reps!!, it.rpe) }
+        
+        // Check each PR type and determine which ones are actually new PRs
+        val potentialPRs = mutableListOf<PersonalRecord>()
+        
+        // 1. Volume PR check
+        bestVolumeSet?.let { set ->
+            val volume = set.weight!! * set.reps!!
             val existingVolumePR = existingPRs.find { it.recordType == "Volume" }
             
             if (existingVolumePR == null || volume > (existingVolumePR.volume ?: 0.0)) {
-                newPRs.add(PersonalRecord(
+                potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Volume",
                     weight = set.weight,
@@ -299,12 +334,14 @@ class ProgressRepository @Inject constructor(
                     } else null
                 ))
             }
-            
-            // 2. Max Weight PR (heaviest single set)
+        }
+        
+        // 2. Max Weight PR check
+        bestMaxWeightSet?.let { set ->
             val existingMaxWeightPR = existingPRs.find { it.recordType == "Max Weight" }
             
-            if (existingMaxWeightPR == null || set.weight > (existingMaxWeightPR.weight ?: 0.0)) {
-                newPRs.add(PersonalRecord(
+            if (existingMaxWeightPR == null || set.weight!! > (existingMaxWeightPR.weight ?: 0.0)) {
+                potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Max Weight",
                     weight = set.weight,
@@ -313,57 +350,73 @@ class ProgressRepository @Inject constructor(
                     achievedAt = set.createdAt,
                     previousValue = existingMaxWeightPR?.weight,
                     improvement = if (existingMaxWeightPR?.weight != null) {
-                        ((set.weight - existingMaxWeightPR.weight) / existingMaxWeightPR.weight) * 100
+                        ((set.weight!! - existingMaxWeightPR.weight) / existingMaxWeightPR.weight) * 100
                     } else null
                 ))
             }
+        }
+        
+        // 3. Estimated 1RM PR check
+        best1RMSet?.let { set ->
+            val estimated1RM = calculateOneRepMax(set.weight!!, set.reps!!, set.rpe)
+            val existing1RMPR = existingPRs.find { it.recordType == "1RM" }
             
-            // 3. Estimated 1RM PR
-            if (set.reps > 0) {
-                val estimated1RM = calculateOneRepMax(set.weight, set.reps, set.rpe)
-                val existing1RMPR = existingPRs.find { it.recordType == "1RM" }
-                
-                if (existing1RMPR == null || estimated1RM > (existing1RMPR.estimated1RM ?: 0.0)) {
-                    newPRs.add(PersonalRecord(
-                        exerciseId = exercise.id,
-                        recordType = "1RM",
-                        weight = set.weight,
-                        reps = set.reps,
-                        estimated1RM = estimated1RM,
-                        workoutId = workoutId,
-                        achievedAt = set.createdAt,
-                        previousValue = existing1RMPR?.estimated1RM,
-                        improvement = if (existing1RMPR?.estimated1RM != null) {
-                            ((estimated1RM - existing1RMPR.estimated1RM) / existing1RMPR.estimated1RM) * 100
-                        } else null
-                    ))
-                }
+            if (existing1RMPR == null || estimated1RM > (existing1RMPR.estimated1RM ?: 0.0)) {
+                potentialPRs.add(PersonalRecord(
+                    exerciseId = exercise.id,
+                    recordType = "1RM",
+                    weight = set.weight,
+                    reps = set.reps,
+                    estimated1RM = estimated1RM,
+                    workoutId = workoutId,
+                    achievedAt = set.createdAt,
+                    previousValue = existing1RMPR?.estimated1RM,
+                    improvement = if (existing1RMPR?.estimated1RM != null) {
+                        ((estimated1RM - existing1RMPR.estimated1RM) / existing1RMPR.estimated1RM) * 100
+                    } else null
+                ))
             }
+        }
+        
+        // Only create ONE PR per exercise per workout - choose the most significant one
+        if (potentialPRs.isNotEmpty()) {
+            // Always prioritize Volume PR if it exists, otherwise Max Weight, otherwise 1RM
+            val bestPR = potentialPRs.find { it.recordType == "Volume" }
+                ?: potentialPRs.find { it.recordType == "Max Weight" }
+                ?: potentialPRs.firstOrNull()
             
-            // Insert all new PRs
-            if (newPRs.isNotEmpty()) {
-                newPRs.forEach { personalRecordDao.insertPersonalRecord(it) }
-            }
+            bestPR?.let { personalRecordDao.insertPersonalRecord(it) }
         }
     }
     
     /**
-     * Check for cardio-based personal records (Distance, Duration, Speed)
+     * Check for cardio-based personal records (Distance, Duration, Speed) for an exercise
+     * Only creates ONE PR per exercise per workout (the most significant one)
      */
-    private suspend fun checkCardioPRs(
-        set: ExerciseSet, 
+    private suspend fun checkCardioPRsForExercise(
+        sets: List<ExerciseSet>, 
         exercise: Exercise, 
         existingPRs: List<PersonalRecord>, 
         workoutId: Long
     ) {
-        val newPRs = mutableListOf<PersonalRecord>()
+        val potentialPRs = mutableListOf<PersonalRecord>()
         
-        // 1. Distance PR
-        if (set.distance != null && set.distance > 0) {
+        // Find the best performance for each PR type
+        val bestDistanceSet = sets.filter { it.distance != null && it.distance > 0 }
+            .maxByOrNull { it.distance!! }
+        val bestDurationSet = sets.filter { it.durationSeconds != null && it.durationSeconds > 0 }
+            .maxByOrNull { it.durationSeconds!! }
+        val bestSpeedSet = sets.filter { 
+            it.distance != null && it.durationSeconds != null && 
+            it.distance > 0 && it.durationSeconds > 0 
+        }.maxByOrNull { it.distance!! / (it.durationSeconds!! / 3600.0) }
+        
+        // 1. Distance PR - only if this is the best distance set
+        bestDistanceSet?.let { set ->
             val existingDistancePR = existingPRs.find { it.recordType == "Distance" }
             
-            if (existingDistancePR == null || set.distance > (existingDistancePR.distance ?: 0.0)) {
-                newPRs.add(PersonalRecord(
+            if (existingDistancePR == null || set.distance!! > (existingDistancePR.distance ?: 0.0)) {
+                potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Distance",
                     distance = set.distance,
@@ -372,18 +425,18 @@ class ProgressRepository @Inject constructor(
                     achievedAt = set.createdAt,
                     previousValue = existingDistancePR?.distance,
                     improvement = if (existingDistancePR?.distance != null) {
-                        ((set.distance - existingDistancePR.distance) / existingDistancePR.distance) * 100
+                        ((set.distance!! - existingDistancePR.distance) / existingDistancePR.distance) * 100
                     } else null
                 ))
             }
         }
         
-        // 2. Duration PR
-        if (set.durationSeconds != null && set.durationSeconds > 0) {
+        // 2. Duration PR - only if this is the best duration set
+        bestDurationSet?.let { set ->
             val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
             
-            if (existingDurationPR == null || set.durationSeconds > (existingDurationPR.durationSeconds ?: 0)) {
-                newPRs.add(PersonalRecord(
+            if (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0)) {
+                potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Duration",
                     durationSeconds = set.durationSeconds,
@@ -392,23 +445,22 @@ class ProgressRepository @Inject constructor(
                     achievedAt = set.createdAt,
                     previousValue = existingDurationPR?.durationSeconds?.toDouble(),
                     improvement = if (existingDurationPR?.durationSeconds != null) {
-                        ((set.durationSeconds - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
+                        ((set.durationSeconds!! - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
                     } else null
                 ))
             }
         }
         
-        // 3. Speed PR (distance per time - higher is better)
-        if (set.distance != null && set.durationSeconds != null && 
-            set.distance > 0 && set.durationSeconds > 0) {
-            val speed = set.distance / (set.durationSeconds / 3600.0) // km/h or mph
+        // 3. Speed PR - only if this is the best speed set
+        bestSpeedSet?.let { set ->
+            val speed = set.distance!! / (set.durationSeconds!! / 3600.0) // km/h or mph
             val existingSpeedPR = existingPRs.find { it.recordType == "Speed" }
             val existingSpeed = if (existingSpeedPR?.distance != null && existingSpeedPR.durationSeconds != null) {
                 existingSpeedPR.distance / (existingSpeedPR.durationSeconds / 3600.0)
             } else null
             
             if (existingSpeed == null || speed > existingSpeed) {
-                newPRs.add(PersonalRecord(
+                potentialPRs.add(PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Speed",
                     distance = set.distance,
@@ -423,26 +475,35 @@ class ProgressRepository @Inject constructor(
             }
         }
         
-        // Insert all new PRs
-        if (newPRs.isNotEmpty()) {
-            newPRs.forEach { personalRecordDao.insertPersonalRecord(it) }
+        // Only create ONE PR per exercise per workout - choose the most significant one
+        if (potentialPRs.isNotEmpty()) {
+            // Priority: Distance > Duration > Speed (Distance is most meaningful for cardio)
+            val bestPR = potentialPRs.find { it.recordType == "Distance" }
+                ?: potentialPRs.find { it.recordType == "Duration" }
+                ?: potentialPRs.first()
+            
+            personalRecordDao.insertPersonalRecord(bestPR)
         }
     }
     
     /**
-     * Check for isometric-based personal records (Duration)
+     * Check for isometric-based personal records (Duration) for an exercise
+     * Only creates ONE PR per exercise per workout
      */
-    private suspend fun checkIsometricPRs(
-        set: ExerciseSet, 
+    private suspend fun checkIsometricPRsForExercise(
+        sets: List<ExerciseSet>, 
         exercise: Exercise, 
         existingPRs: List<PersonalRecord>, 
         workoutId: Long
     ) {
-        // Duration PR for isometric exercises
-        if (set.durationSeconds != null && set.durationSeconds > 0) {
+        // Find the best duration set for isometric exercises
+        val bestDurationSet = sets.filter { it.durationSeconds != null && it.durationSeconds > 0 }
+            .maxByOrNull { it.durationSeconds!! }
+        
+        bestDurationSet?.let { set ->
             val existingDurationPR = existingPRs.find { it.recordType == "Duration" }
             
-            if (existingDurationPR == null || set.durationSeconds > (existingDurationPR.durationSeconds ?: 0)) {
+            if (existingDurationPR == null || set.durationSeconds!! > (existingDurationPR.durationSeconds ?: 0)) {
                 val newPR = PersonalRecord(
                     exerciseId = exercise.id,
                     recordType = "Duration",
@@ -451,7 +512,7 @@ class ProgressRepository @Inject constructor(
                     achievedAt = set.createdAt,
                     previousValue = existingDurationPR?.durationSeconds?.toDouble(),
                     improvement = if (existingDurationPR?.durationSeconds != null) {
-                        ((set.durationSeconds - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
+                        ((set.durationSeconds!! - existingDurationPR.durationSeconds).toDouble() / existingDurationPR.durationSeconds) * 100
                     } else null
                 )
                 
@@ -500,6 +561,37 @@ class ProgressRepository @Inject constructor(
      */
     suspend fun checkAndUpdateVolumePRs(workoutId: Long) {
         checkAndUpdatePersonalRecords(workoutId)
+    }
+    
+    /**
+     * Clean up duplicate PRs for a specific workout to ensure only 1 PR per exercise
+     * This removes multiple PRs for the same exercise in the same workout and keeps only the best one
+     */
+    suspend fun cleanupDuplicatePRsForWorkout(workoutId: Long) {
+        withContext(ioDispatcher) {
+            val workoutPRs = personalRecordDao.getPersonalRecordsForWorkout(workoutId)
+            
+            // Group PRs by exercise (not by type) - we want only 1 PR per exercise total
+            val prsByExercise = workoutPRs.groupBy { it.exerciseId }
+            
+            for ((exerciseId, prs) in prsByExercise) {
+                if (prs.size > 1) {
+                    // Keep only the best PR for this exercise - prioritize Volume > Max Weight > 1RM > Distance > Duration > Speed
+                    val bestPR = prs.find { it.recordType == "Volume" }
+                        ?: prs.find { it.recordType == "Max Weight" }
+                        ?: prs.find { it.recordType == "1RM" }
+                        ?: prs.find { it.recordType == "Distance" }
+                        ?: prs.find { it.recordType == "Duration" }
+                        ?: prs.find { it.recordType == "Speed" }
+                        ?: prs.first()
+                    
+                    // Delete all PRs except the best one
+                    prs.filter { it.id != bestPR.id }.forEach { pr ->
+                        personalRecordDao.deletePersonalRecord(pr)
+                    }
+                }
+            }
+        }
     }
     
     /**

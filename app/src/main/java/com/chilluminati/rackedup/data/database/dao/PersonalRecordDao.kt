@@ -19,6 +19,31 @@ interface PersonalRecordDao {
     fun getAllPersonalRecordsFlow(): Flow<List<PersonalRecord>>
 
     /**
+     * Get personal records achieved in a specific workout
+     */
+    @Query("SELECT * FROM personal_records WHERE workout_id = :workoutId")
+    suspend fun getPersonalRecordsForWorkout(workoutId: Long): List<PersonalRecord>
+
+    /**
+     * Get the best personal records achieved in a specific workout (one per exercise per record type)
+     * This ensures we only count unique PRs per exercise, not multiple PRs for the same exercise
+     */
+    @Query("""
+        SELECT pr.* FROM personal_records pr
+        WHERE pr.workout_id = :workoutId
+        AND pr.id IN (
+            SELECT MAX(pr2.id) 
+            FROM personal_records pr2 
+            WHERE pr2.workout_id = :workoutId
+            AND pr2.exercise_id = pr.exercise_id 
+            AND pr2.record_type = pr.record_type
+            GROUP BY pr2.exercise_id, pr2.record_type
+        )
+        ORDER BY pr.exercise_id, pr.record_type
+    """)
+    suspend fun getBestPersonalRecordsForWorkout(workoutId: Long): List<PersonalRecord>
+
+    /**
      * Get the best volume personal record for each exercise (highest volume per exercise)
      * This query ensures only one record per exercise by selecting the most recent record
      * when multiple records have the same volume

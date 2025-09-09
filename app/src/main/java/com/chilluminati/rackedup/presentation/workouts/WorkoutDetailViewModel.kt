@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.chilluminati.rackedup.data.repository.WorkoutRepository
 import com.chilluminati.rackedup.data.repository.ExerciseRepository
 import com.chilluminati.rackedup.data.repository.SettingsRepository
+import com.chilluminati.rackedup.data.repository.ProgressRepository
 import com.chilluminati.rackedup.data.database.entity.Workout
 import com.chilluminati.rackedup.data.database.entity.WorkoutExercise
 import com.chilluminati.rackedup.data.database.entity.ExerciseSet
 import com.chilluminati.rackedup.data.database.entity.Exercise
+import com.chilluminati.rackedup.data.database.entity.PersonalRecord
 import com.chilluminati.rackedup.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,6 +26,7 @@ class WorkoutDetailViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
     private val settingsRepository: SettingsRepository,
+    private val progressRepository: ProgressRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     
@@ -70,11 +73,15 @@ class WorkoutDetailViewModel @Inject constructor(
                         }
                     }
                     
+                    // Load personal records for this workout (only unique PRs per exercise)
+                    val personalRecords = progressRepository.getBestPersonalRecordsForWorkout(workoutId)
+                    
                     _uiState.value = _uiState.value.copy(
                         workout = workout,
                         workoutExercises = workoutExercises,
                         exerciseDetails = exerciseDetails,
                         exerciseSets = exerciseSets,
+                        personalRecords = personalRecords,
                         isLoading = false,
                         error = null
                     )
@@ -140,6 +147,7 @@ data class WorkoutDetailUiState(
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val exerciseDetails: Map<Long, Exercise> = emptyMap(),
     val exerciseSets: Map<Long, List<ExerciseSet>> = emptyMap(),
+    val personalRecords: List<PersonalRecord> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
@@ -153,5 +161,5 @@ data class WorkoutDetailUiState(
     
     val totalExercises: Int get() = workoutExercises.size
     
-    val personalRecords: Int get() = 0 // TODO: Implement PR detection
+    val personalRecordCount: Int get() = personalRecords.size
 }

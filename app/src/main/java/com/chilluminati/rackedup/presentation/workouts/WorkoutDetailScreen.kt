@@ -250,7 +250,7 @@ private fun WorkoutSummaryCard(uiState: WorkoutDetailUiState, weightUnit: String
                 StatItem("Exercises", uiState.totalExercises.toString())
                 StatItem("Sets", uiState.totalSets.toString())
                 StatItem("Volume", formatVolume(uiState.totalVolume, weightUnit))
-                StatItem("PR's", uiState.personalRecords.toString())
+                StatItem("PR's", uiState.personalRecordCount.toString())
             }
         }
     }
