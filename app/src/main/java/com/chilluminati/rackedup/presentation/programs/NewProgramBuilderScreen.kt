@@ -38,6 +38,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.activity.compose.BackHandler
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.WindowInsets
@@ -163,6 +164,11 @@ fun NewProgramBuilderScreen(
             viewModel.cancelProgramBuilder()
             onNavigateBack()
         }
+    }
+
+    // Handle system back button
+    BackHandler {
+        handleBackNavigation()
     }
 
     val mainInteractionSource = remember { MutableInteractionSource() }
@@ -522,16 +528,13 @@ fun NewProgramBuilderScreen(
                 }
             }
 
-            // Bottom save buttons
+            // Bottom save button
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { viewModel.saveProgramBuilder() }, modifier = Modifier.weight(1f)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Button(onClick = { viewModel.saveProgramBuilder() }) {
                         Icon(Icons.Filled.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Save Program")
-                    }
-                    OutlinedButton(onClick = { viewModel.saveProgramBuilderAsTemplate() }, modifier = Modifier.weight(1f)) {
-                        Text("Save as Template")
                     }
                 }
             }
