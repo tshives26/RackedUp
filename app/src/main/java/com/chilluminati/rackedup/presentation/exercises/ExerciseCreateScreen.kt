@@ -232,7 +232,7 @@ fun ExerciseCreateScreen(
             )
 
             AccentSectionHeader(title = "Content")
-            OutlinedTextField(value = instructions, onValueChange = { instructions = it }, label = { Text("Instructions") }, modifier = Modifier.fillMaxWidth(), minLines = 3, colors = AppTextFieldDefaults.outlinedColors())
+            OutlinedTextField(value = instructions, onValueChange = { instructions = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3, colors = AppTextFieldDefaults.outlinedColors())
             OutlinedTextField(value = instructionStepsText, onValueChange = { instructionStepsText = it }, label = { Text("Instruction Steps (one per line)") }, modifier = Modifier.fillMaxWidth(), minLines = 3, colors = AppTextFieldDefaults.outlinedColors())
 
             Row(
