@@ -495,7 +495,7 @@ class ProgramsViewModel @Inject constructor(
             programDayId = dayId,
             exerciseId = exerciseId,
             sets = "3",
-            reps = "10",
+            reps = "",
             restTimeSeconds = null,
             orderIndex = existingExercises.size
         )

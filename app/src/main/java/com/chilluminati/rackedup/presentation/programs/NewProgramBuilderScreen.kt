@@ -731,7 +731,7 @@ private fun ExerciseRow(
 ) {
     val details = getExerciseById(exercise.exerciseId)
     var sets by remember(exercise.sets) { mutableStateOf(exercise.sets) }
-    var reps by remember(exercise.reps) { mutableStateOf(exercise.reps ?: "10") }
+    var reps by remember(exercise.reps) { mutableStateOf(exercise.reps ?: "") }
     var rest by remember(exercise.restTimeSeconds) { mutableStateOf(exercise.restTimeSeconds ?: 60) }
     
     // Exercise type-specific input data
@@ -740,7 +740,7 @@ private fun ExerciseRow(
             when (details?.exerciseType?.lowercase()) {
                 "strength" -> ExerciseInputData(
                     weight = "", // Weight not stored in program exercise, only in sets
-                    reps = exercise.reps ?: "10",
+                    reps = exercise.reps ?: "",
                     sets = exercise.sets
                 )
                 "cardio" -> ExerciseInputData(
@@ -754,7 +754,7 @@ private fun ExerciseRow(
                     holdDurationSeconds = ""
                 )
                 else -> ExerciseInputData(
-                    reps = exercise.reps ?: "10",
+                    reps = exercise.reps ?: "",
                     sets = exercise.sets
                 )
             }
@@ -917,7 +917,7 @@ private fun ExerciseRow(
                                 onInputChange = { newInputData ->
                                     inputData = newInputData
                                     val newSets = newInputData.sets.ifBlank { "3" }
-                                    val newReps = newInputData.reps.ifBlank { "10" }
+                                    val newReps = newInputData.reps.ifBlank { "" }
                                     onUpdate(newSets, newReps, rest)
                                 },
                                 weightUnit = "lbs",
