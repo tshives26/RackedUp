@@ -368,25 +368,25 @@ private fun QuickStatsSection(
                 QuickStatCard(
                     title = "Workouts",
                     value = "${monthlyStats.workoutCount}",
-                    subtitle = "This month",
+                    subtitle = "This Month",
                     modifier = Modifier.weight(1f)
                 )
                 QuickStatCard(
                     title = "Workouts",
                     value = "${weeklyStats.workoutCount}",
-                    subtitle = "This week",
+                    subtitle = "This Week",
                     modifier = Modifier.weight(1f)
                 )
                 QuickStatCard(
                     title = "Sets",
                     value = "${weeklyStats.totalSets}",
-                    subtitle = "This week",
+                    subtitle = "This Week",
                     modifier = Modifier.weight(1f)
                 )
                 QuickStatCard(
                     title = "Volume",
                     value = "${(weeklyStats.totalVolume).formatCompact()}",
-                    subtitle = "this week",
+                    subtitle = "This Week",
                     modifier = Modifier.weight(1f)
                 )
             }
