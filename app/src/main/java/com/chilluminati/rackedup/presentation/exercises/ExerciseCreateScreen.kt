@@ -6,10 +6,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -19,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +34,7 @@ import coil.compose.AsyncImage
 import com.chilluminati.rackedup.data.repository.ExerciseRepository
 import com.chilluminati.rackedup.presentation.components.AccentSectionHeader
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
+import com.chilluminati.rackedup.presentation.components.GradientBackground
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +52,9 @@ fun ExerciseCreateScreen(
     val categories by viewModel.categoryOptions.collectAsStateWithLifecycle()
     val equipmentOptions by viewModel.equipmentOptions.collectAsStateWithLifecycle()
     val muscleOptions by viewModel.muscleOptions.collectAsStateWithLifecycle()
+    
+    // Focus manager to clear focus when clicking outside
+    val focusManager = LocalFocusManager.current
 
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
@@ -74,14 +85,30 @@ fun ExerciseCreateScreen(
         onResult = { uri -> if (uri != null) imageUrl = uri.toString() }
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Create Exercise") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) { Icon(Icons.Default.Close, contentDescription = null) }
-                },
-                actions = {
+    GradientBackground(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Custom header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onNavigateBack) { 
+                        Icon(Icons.Default.Close, contentDescription = "Close") 
+                    }
+                    Text(
+                        text = "Create Exercise",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     IconButton(onClick = {
                         viewModel.create(
                             name = name,
@@ -102,25 +129,33 @@ fun ExerciseCreateScreen(
                             isCompound = isCompound,
                             isUnilateral = isUnilateral
                         ) { onCreated() }
-                    }) { Icon(Icons.Default.Check, contentDescription = null) }
+                    }) { 
+                        Icon(Icons.Default.Check, contentDescription = "Save") 
+                    }
                 }
-            )
-        }
-    ) { padding ->
-        val scrollState = rememberScrollState()
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp,
-                    bottom = 16.dp + WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-                )
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            }
+            
+            // Main content
+            val scrollState = rememberScrollState()
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = 16.dp + WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+                    )
+                    .verticalScroll(scrollState)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        // Clear focus when clicking outside input fields
+                        focusManager.clearFocus()
+                    },
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             AccentSectionHeader(title = "Basics")
             OutlinedTextField(
                 value = name,
@@ -230,6 +265,7 @@ fun ExerciseCreateScreen(
             OutlinedTextField(value = videoUrl, onValueChange = { videoUrl = it }, label = { Text("Video URL (optional)") }, modifier = Modifier.fillMaxWidth(), colors = AppTextFieldDefaults.outlinedColors())
 
             // Removed Attributes section per request
+            }
         }
     }
 
