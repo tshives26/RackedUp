@@ -83,8 +83,9 @@ body {
     padding: 0 var(--spacing-md);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     height: 90px;
+    gap: var(--spacing-xl);
 }
 
 .nav-brand {
@@ -125,6 +126,7 @@ body {
 .nav-menu {
     display: flex;
     align-items: center;
+    flex: 1;
 }
 
 .nav-list {
@@ -137,6 +139,7 @@ body {
     justify-items: center;
     width: 100%;
     max-width: 800px;
+    list-style: none;
 }
 
 .nav-link {
@@ -613,6 +616,7 @@ body {
         grid-template-rows: repeat(2, 1fr);
         gap: var(--spacing-sm);
         max-width: 900px;
+        justify-items: center;
     }
     
     .nav-link {
@@ -643,6 +647,7 @@ body {
         grid-template-rows: repeat(2, 1fr);
         gap: var(--spacing-xs);
         max-width: 800px;
+        justify-items: center;
     }
     
     .nav-link {
