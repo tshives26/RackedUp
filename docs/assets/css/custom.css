@@ -84,7 +84,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 70px;
+    height: 90px;
 }
 
 .nav-brand {
@@ -128,12 +128,15 @@ body {
 }
 
 .nav-list {
-    display: flex;
-    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: var(--spacing-xs);
     margin: 0;
     align-items: center;
-    flex-wrap: wrap;
+    justify-items: center;
+    width: 100%;
+    max-width: 800px;
 }
 
 .nav-link {
@@ -189,7 +192,7 @@ body {
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 25%, #2c3e50 50%, #34495e 75%, #2c3e50 100%);
     color: var(--primary-white);
     padding: 120px 0 80px;
-    margin-top: 70px;
+    margin-top: 90px;
     position: relative;
     overflow: hidden;
 }
@@ -606,7 +609,10 @@ body {
     }
     
     .nav-list {
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: repeat(2, 1fr);
         gap: var(--spacing-sm);
+        max-width: 900px;
     }
     
     .nav-link {
@@ -632,6 +638,13 @@ body {
         max-width: 1200px;
     }
     
+    .nav-list {
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: var(--spacing-xs);
+        max-width: 800px;
+    }
+    
     .nav-link {
         font-size: var(--font-size-xs);
         padding: var(--spacing-xs) var(--spacing-sm);
@@ -650,6 +663,13 @@ body {
     .footer-container {
         max-width: 720px;
         padding: 0 var(--spacing-lg);
+    }
+    
+    .nav-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+        max-width: none;
     }
     
     .hero-title {
@@ -672,6 +692,10 @@ body {
 
 /* Mobile Large (576px - 767px) */
 @media (min-width: 576px) and (max-width: 767px) {
+    .nav-container {
+        height: 70px;
+    }
+    
     .nav-menu {
         position: fixed;
         top: 70px;
@@ -694,10 +718,12 @@ body {
     }
     
     .nav-list {
+        display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
         width: 100%;
         padding: 0 var(--spacing-lg);
+        max-width: none;
     }
     
     .nav-link {
@@ -812,10 +838,12 @@ body {
     }
     
     .nav-list {
+        display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
         width: 100%;
         padding: 0 var(--spacing-md);
+        max-width: none;
     }
     
     .nav-link {
