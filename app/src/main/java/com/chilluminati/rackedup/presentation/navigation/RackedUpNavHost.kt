@@ -26,6 +26,10 @@ import com.chilluminati.rackedup.presentation.profile.DataManagementScreen
 import com.chilluminati.rackedup.presentation.programs.NewProgramBuilderScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chilluminati.rackedup.presentation.programs.ProgramsViewModel
+import com.chilluminati.rackedup.presentation.help.HelpDocumentationScreen
+import com.chilluminati.rackedup.presentation.help.QuickStartGuideScreen
+import com.chilluminati.rackedup.presentation.help.FeatureOverviewScreen
+import com.chilluminati.rackedup.presentation.help.TroubleshootingScreen
 
 /**
  * Main navigation host for the RackedUp app
@@ -152,6 +156,9 @@ fun RackedUpNavHost(
                 },
                 onNavigateToEditProfile = {
                     navController.navigate(RackedUpDestination.EditProfile.route)
+                },
+                onNavigateToHelpDocumentation = {
+                    navController.navigate(RackedUpDestination.HelpDocumentation.route)
                 },
                 context = context
             )
@@ -334,6 +341,46 @@ fun RackedUpNavHost(
 
         composable(RackedUpDestination.EditProfile.route) {
             EditProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Help & Documentation destinations
+        composable(RackedUpDestination.HelpDocumentation.route) {
+            HelpDocumentationScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToQuickStart = {
+                    navController.navigate(RackedUpDestination.QuickStartGuide.route)
+                },
+                onNavigateToFeatureOverview = {
+                    navController.navigate(RackedUpDestination.FeatureOverview.route)
+                },
+                onNavigateToTroubleshooting = {
+                    navController.navigate(RackedUpDestination.Troubleshooting.route)
+                }
+            )
+        }
+
+        composable(RackedUpDestination.QuickStartGuide.route) {
+            QuickStartGuideScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFeatureOverview = {
+                    navController.navigate(RackedUpDestination.FeatureOverview.route)
+                }
+            )
+        }
+
+        composable(RackedUpDestination.FeatureOverview.route) {
+            FeatureOverviewScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLearnMore = { featureKey ->
+                    // TODO: Navigate to specific feature details or external documentation
+                }
+            )
+        }
+
+        composable(RackedUpDestination.Troubleshooting.route) {
+            TroubleshootingScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

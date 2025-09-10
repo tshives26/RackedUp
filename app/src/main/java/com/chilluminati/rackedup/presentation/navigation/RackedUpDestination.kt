@@ -161,6 +161,36 @@ sealed class RackedUpDestination(
         unselectedIcon = Icons.Outlined.Add
     )
 
+    // Help & Documentation destinations
+    object HelpDocumentation : RackedUpDestination(
+        route = "help_documentation",
+        titleRes = R.string.help_documentation,
+        selectedIcon = Icons.Filled.Help,
+        unselectedIcon = Icons.Outlined.Help
+    )
+
+    object QuickStartGuide : RackedUpDestination(
+        route = "quick_start_guide",
+        titleRes = R.string.quick_start_guide,
+        selectedIcon = Icons.Filled.PlayArrow,
+        unselectedIcon = Icons.Outlined.PlayArrow
+    )
+
+    object FeatureOverview : RackedUpDestination(
+        route = "feature_overview",
+        titleRes = R.string.feature_overview,
+        selectedIcon = Icons.Filled.Explore,
+        unselectedIcon = Icons.Outlined.Explore
+    )
+
+    object Troubleshooting : RackedUpDestination(
+        route = "troubleshooting",
+        titleRes = R.string.troubleshooting,
+        selectedIcon = Icons.Filled.Build,
+        unselectedIcon = Icons.Outlined.Build
+    )
+
+
     companion object {
         // Bottom navigation destinations
         val bottomNavDestinations = listOf(

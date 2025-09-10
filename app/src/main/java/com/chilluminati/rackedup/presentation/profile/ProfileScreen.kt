@@ -41,6 +41,7 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToHelpDocumentation: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     context: android.content.Context
@@ -85,7 +86,10 @@ fun ProfileScreen(
 
         // Help & Support Section
         item {
-            HelpSupportSection(context = context)
+            HelpSupportSection(
+                context = context,
+                onNavigateToHelpDocumentation = onNavigateToHelpDocumentation
+            )
         }
     }
     }
@@ -735,7 +739,8 @@ private fun SettingsSection(
 
 @Composable
 private fun HelpSupportSection(
-    context: android.content.Context
+    context: android.content.Context,
+    onNavigateToHelpDocumentation: () -> Unit = {}
 ) {
     Column {
         Text(
@@ -746,7 +751,7 @@ private fun HelpSupportSection(
         Spacer(modifier = Modifier.height(8.dp))
         
         Card(
-            onClick = { /* TODO: Open help documentation */ },
+            onClick = onNavigateToHelpDocumentation,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(

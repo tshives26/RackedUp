@@ -1,0 +1,75 @@
+# GitHub Pages Configuration for RackedUp Documentation
+
+# Site settings
+title: "RackedUp Help & Documentation"
+description: "Complete user guide and documentation for RackedUp - the ultimate gym companion for serious athletes"
+url: "https://tshives26.github.io"
+baseurl: "/RackedUp"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# SEO
+author: "RackedUp Team"
+twitter:
+  username: "rackedup_app"
+  card: "summary_large_image"
+
+# Navigation
+navigation:
+  - title: "Getting Started"
+    url: "#getting-started"
+  - title: "Features"
+    url: "#core-features"
+  - title: "Troubleshooting"
+    url: "#troubleshooting"
+  - title: "FAQ"
+    url: "#faq"
+  - title: "Support"
+    url: "#contact--support"
+
+# Custom CSS
+custom_css:
+  - "/assets/css/custom.css"
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Include files
+include:
+  - _pages
+
+# Collections
+collections:
+  pages:
+    output: true
+    permalink: /:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
