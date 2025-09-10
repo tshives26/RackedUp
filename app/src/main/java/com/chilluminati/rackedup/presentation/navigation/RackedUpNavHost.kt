@@ -371,6 +371,7 @@ fun RackedUpNavHost(
         }
 
         composable(RackedUpDestination.FeatureOverview.route) {
+            val context = androidx.compose.ui.platform.LocalContext.current
             FeatureOverviewScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onLearnMore = { featureKey ->
