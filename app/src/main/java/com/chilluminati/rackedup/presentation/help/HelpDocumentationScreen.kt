@@ -126,7 +126,7 @@ fun HelpDocumentationScreen(
                         title = "Complete User Guide",
                         description = "Comprehensive documentation",
                         icon = Icons.Default.MenuBook,
-                        url = "https://help.rackedup.app"
+                        url = "https://tshives26.github.io/RackedUp/"
                     )
                 }
 

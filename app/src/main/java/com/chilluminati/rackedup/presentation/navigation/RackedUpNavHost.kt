@@ -374,7 +374,8 @@ fun RackedUpNavHost(
             FeatureOverviewScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onLearnMore = { featureKey ->
-                    // TODO: Navigate to specific feature details or external documentation
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://tshives26.github.io/RackedUp/"))
+                    context.startActivity(intent)
                 }
             )
         }
