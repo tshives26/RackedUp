@@ -163,6 +163,9 @@ dependencies {
 
     // Image Loading
     implementation(libs.coil.compose)
+    
+    // Image Cropping
+    implementation("com.github.yalantis:ucrop:2.2.11")
 
     // OkHttp for build-time import fallback and remote fetches
     implementation(libs.okhttp)

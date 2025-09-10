@@ -67,6 +67,16 @@
             </intent-filter>
         </activity>
         
+        <!-- UCrop Activity -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTop"
+            android:fitsSystemWindows="true"
+            android:windowTranslucentStatus="false"
+            android:windowTranslucentNavigation="false" />
 
         
     </application>

@@ -26,10 +26,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import android.content.Intent
 import android.net.Uri
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import com.chilluminati.rackedup.presentation.components.AppTextFieldDefaults
 import com.chilluminati.rackedup.presentation.components.AccentSectionHeader
+import com.yalantis.ucrop.UCrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +60,7 @@ fun EditProfileScreen(
         avatarUri = profile?.profileImageUrl?.toUri()
     }
 
-    // Photo picker for avatar
+    // Photo picker and cropping for avatar
     val context = LocalContext.current
     var lastPersistedUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -89,19 +91,54 @@ fun EditProfileScreen(
         }
     }
 
+    // UCrop launcher
+    val cropImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val resultUri = UCrop.getOutput(result.data!!)
+            if (resultUri != null) {
+                // Release any previously held persisted permission if different
+                avatarUri?.let { previous ->
+                    if (previous != resultUri) {
+                        releasePersistedPermissionIfHeld(previous)
+                    }
+                }
+                avatarUri = resultUri
+                // Attempt to persist read permission when applicable
+                persistReadPermissionIfPossible(resultUri)
+            }
+        }
+    }
+
+    // Image picker launcher
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            // Release any previously held persisted permission if different
-            avatarUri?.let { previous ->
-                if (previous != uri) {
-                    releasePersistedPermissionIfHeld(previous)
-                }
-            }
-            avatarUri = uri
-            // Attempt to persist read permission when applicable (older devices/providers)
-            persistReadPermissionIfPossible(uri)
+            // Start UCrop with the selected image
+            val destinationUri = Uri.fromFile(File(context.cacheDir, "cropped_image_${System.currentTimeMillis()}.jpg"))
+            
+            val options = UCrop.Options()
+            options.setCompressionQuality(90)
+            options.setToolbarColor(context.getColor(android.R.color.black))
+            options.setActiveControlsWidgetColor(context.getColor(android.R.color.white))
+            options.setToolbarWidgetColor(context.getColor(android.R.color.white))
+            options.setFreeStyleCropEnabled(false) // Disable free-style for consistent square crops
+            options.setHideBottomControls(false) // Keep bottom controls visible
+            options.setShowCropFrame(true) // Show crop frame
+            options.setShowCropGrid(true) // Show crop grid
+            options.setCropGridStrokeWidth(2) // Grid line thickness
+            options.setMaxBitmapSize(1024) // Limit bitmap size for performance
+            options.setToolbarTitle("Crop Photo") // Set toolbar title
+            // Let UCrop use its default icon which should be properly styled
+            
+            val uCrop = UCrop.of(uri, destinationUri)
+                .withOptions(options)
+                .withAspectRatio(1f, 1f) // Square aspect ratio (1:1) - perfect for profile pictures
+                .withMaxResultSize(512, 512) // Max 512x512px output - good for 64-72dp display sizes
+            
+            cropImageLauncher.launch(uCrop.getIntent(context))
         }
     }
 
