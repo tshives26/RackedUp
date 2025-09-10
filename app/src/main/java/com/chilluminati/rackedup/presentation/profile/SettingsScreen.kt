@@ -236,32 +236,6 @@ fun SettingsScreen(
                     // Debug buttons removed
                 }
             }
-            
-            // Testing Section
-            item {
-                SettingsSection(title = "Testing") {
-                    
-                    if (uiState.isLoading) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = "Processing...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }
