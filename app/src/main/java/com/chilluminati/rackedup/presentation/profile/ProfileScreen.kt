@@ -42,7 +42,8 @@ fun ProfileScreen(
     onNavigateToDataManagement: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    context: android.content.Context
 ) {
     val uiState by viewModel.uiState.collectAsState()
     GradientBackground(
@@ -84,7 +85,7 @@ fun ProfileScreen(
 
         // Help & Support Section
         item {
-            HelpSupportSection()
+            HelpSupportSection(context = context)
         }
     }
     }
@@ -733,7 +734,9 @@ private fun SettingsSection(
 }
 
 @Composable
-private fun HelpSupportSection() {
+private fun HelpSupportSection(
+    context: android.content.Context
+) {
     Column {
         Text(
             text = "Help & Support",
@@ -775,7 +778,10 @@ private fun HelpSupportSection() {
         Spacer(modifier = Modifier.height(8.dp))
         
         Card(
-            onClick = { /* TODO: Open feedback form */ },
+            onClick = { 
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://forms.gle/bHfMDc7qsnUn6F4j6"))
+                context.startActivity(intent)
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(

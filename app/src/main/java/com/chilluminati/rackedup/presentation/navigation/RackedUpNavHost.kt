@@ -2,6 +2,7 @@ package com.chilluminati.rackedup.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -141,6 +142,7 @@ fun RackedUpNavHost(
         }
 
         composable(RackedUpDestination.Profile.route) {
+            val context = LocalContext.current
             ProfileScreen(
                 onNavigateToSettings = {
                     navController.navigate(RackedUpDestination.Settings.route)
@@ -150,7 +152,8 @@ fun RackedUpNavHost(
                 },
                 onNavigateToEditProfile = {
                     navController.navigate(RackedUpDestination.EditProfile.route)
-                }
+                },
+                context = context
             )
         }
 
