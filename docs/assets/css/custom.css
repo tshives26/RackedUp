@@ -7,7 +7,7 @@
     box-sizing: border-box;
 }
 
-:root {
+  :root {
     /* Color Palette */
     --primary-black: #000000;
     --secondary-black: #1a1a1a;
@@ -56,7 +56,7 @@
 body {
     font-family: var(--font-family);
     font-size: var(--font-size-base);
-    line-height: 1.6;
+  line-height: 1.6;
     color: var(--primary-black);
     background-color: var(--primary-white);
     -webkit-font-smoothing: antialiased;
@@ -93,6 +93,18 @@ body {
     gap: var(--spacing-sm);
 }
 
+.brand-logo {
+    height: 40px;
+    width: auto;
+    transition: var(--transition-fast);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.brand-logo:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
 .brand-title {
     font-size: var(--font-size-xl);
     font-weight: 700;
@@ -119,7 +131,7 @@ body {
     display: flex;
     list-style: none;
     gap: var(--spacing-md);
-    margin: 0;
+  margin: 0;
     align-items: center;
 }
 
@@ -220,8 +232,8 @@ body {
 }
 
 .hero-container {
-    max-width: 1200px;
-    margin: 0 auto;
+  max-width: 1200px;
+  margin: 0 auto;
     padding: 0 var(--spacing-lg);
     position: relative;
     z-index: 1;
@@ -287,7 +299,7 @@ body {
 }
 
 .content-wrapper {
-    display: grid;
+  display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-2xl);
 }
@@ -363,10 +375,10 @@ body {
 /* Links */
 .documentation a {
     color: var(--primary-black);
-    text-decoration: none;
+  text-decoration: none;
     border-bottom: 1px solid transparent;
     transition: var(--transition-fast);
-    font-weight: 500;
+  font-weight: 500;
 }
 
 .documentation a:hover {
@@ -421,8 +433,8 @@ body {
     margin: var(--spacing-lg) 0;
     background-color: var(--primary-white);
     border: 1px solid var(--border-gray);
-    border-radius: 8px;
-    overflow: hidden;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .documentation th,
@@ -434,7 +446,7 @@ body {
 
 .documentation th {
     background-color: var(--secondary-white);
-    font-weight: 600;
+  font-weight: 600;
     color: var(--primary-black);
 }
 
@@ -471,15 +483,34 @@ body {
     margin-bottom: var(--spacing-xl);
 }
 
+.footer-logo-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.footer-logo {
+    height: 32px;
+    width: auto;
+    filter: brightness(0) invert(1);
+    transition: var(--transition-fast);
+}
+
+.footer-logo:hover {
+    transform: scale(1.05);
+    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2));
+}
+
 .footer-brand h3 {
     font-size: var(--font-size-xl);
     font-weight: 700;
-    margin-bottom: var(--spacing-sm);
+    margin: 0;
 }
 
 .footer-brand p {
     color: var(--light-gray);
-    margin: 0;
+  margin: 0;
 }
 
 .footer-links {
@@ -498,7 +529,7 @@ body {
 .footer-section ul {
     list-style: none;
     padding: 0;
-    margin: 0;
+  margin: 0;
 }
 
 .footer-section li {
@@ -523,7 +554,7 @@ body {
 
 .footer-bottom p {
     color: var(--light-gray);
-    margin: 0;
+  margin: 0;
     font-size: var(--font-size-sm);
 }
 
@@ -729,6 +760,10 @@ body {
         height: 70px;
     }
     
+    .brand-logo {
+        height: 32px;
+    }
+    
     .brand-title {
         font-size: var(--font-size-lg);
     }
@@ -820,9 +855,9 @@ body {
     .status-badge {
         font-size: var(--font-size-xs);
         padding: var(--spacing-xs) var(--spacing-md);
-    }
-    
-    .main-content {
+  }
+  
+  .main-content {
         padding: var(--spacing-2xl) 0;
     }
     
@@ -890,7 +925,7 @@ body {
     }
     
     .footer-links {
-        grid-template-columns: 1fr;
+    grid-template-columns: 1fr;
         gap: var(--spacing-md);
     }
     
@@ -900,6 +935,10 @@ body {
     
     .footer-section a {
         font-size: var(--font-size-sm);
+    }
+    
+    .footer-logo {
+        height: 28px;
     }
     
     .back-to-top {
@@ -924,7 +963,7 @@ body {
     }
     
     .hero {
-        background: none;
+    background: none;
         color: var(--primary-black);
         padding: 0;
         margin: 0;
@@ -954,7 +993,7 @@ body {
 a:focus,
 button:focus {
     outline: 2px solid var(--primary-black);
-    outline-offset: 2px;
+  outline-offset: 2px;
 }
 
 /* High Contrast Mode */
