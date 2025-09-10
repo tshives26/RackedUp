@@ -130,14 +130,6 @@ fun HelpDocumentationScreen(
                     )
                 }
 
-                item {
-                    ExternalLinkCard(
-                        title = "Video Tutorials",
-                        description = "Watch step-by-step guides",
-                        icon = Icons.Default.VideoLibrary,
-                        url = "https://youtube.com/@rackedup"
-                    )
-                }
             }
         }
     }
