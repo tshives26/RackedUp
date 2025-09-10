@@ -94,47 +94,6 @@
 
 *Screenshots will be added here*
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Android Studio Hedgehog (2023.1.1) or later
-- Android SDK API 26+ (Android 8.0)
-- Kotlin 1.9+
-- JDK 17
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/tshives26/RackedUp.git
-   cd RackedUp
-   ```
-
-2. **Open in Android Studio**
-   - Open Android Studio
-   - Select "Open an existing project"
-   - Navigate to the cloned directory and select it
-
-3. **Sync and Build**
-   - Wait for Gradle sync to complete
-   - Build the project: `Build → Make Project`
-   - Run on device/emulator: `Run → Run 'app'`
-
-### Build Commands
-
-```bash
-# Build debug APK
-./gradlew assembleDebug
-
-# Build release APK
-./gradlew assembleRelease
-
-# Run tests
-./gradlew test
-
-# Run UI tests
-./gradlew connectedAndroidTest
-```
 
 ## 🏗️ Project Structure
 
@@ -193,34 +152,6 @@ app/src/main/java/com/chilluminati/rackedup/
 - [ ] **Cloud Backup**: Google Drive integration
 - [ ] **Advanced ML**: Pose estimation and form analysis
 
-## 🤝 Contributing
-
-We welcome contributions from the fitness and Android development communities!
-
-### How to Contribute
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-4. **Add tests** for new functionality
-5. **Commit your changes**
-   ```bash
-   git commit -m "feat: add amazing feature"
-   ```
-6. **Push to your branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-7. **Open a Pull Request**
-
-### Code Style
-- Follow Kotlin coding conventions
-- Use Jetpack Compose best practices
-- Follow Material 3 design guidelines
-- Write unit tests for new features
 
 ## 📊 Current Status
 
