@@ -4,48 +4,78 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-blue.svg)](https://kotlinlang.org/)
 [![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5+-purple.svg)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Material%203-Latest-orange.svg)](https://m3.material.io/)
+[![Documentation](https://img.shields.io/badge/Documentation-GitHub%20Pages-blue.svg)](https://tshives26.github.io/RackedUp/)
 
 **RackedUp** is a modern, offline-first fitness tracking app built with the latest Android technologies. Designed for serious athletes, trainers, and fitness enthusiasts who demand flexibility, precision, privacy, and style.
 
-## 🎯 Features
+> 📖 **[Complete User Guide & Documentation](https://tshives26.github.io/RackedUp/)** - Comprehensive help and tutorials
 
-### 🏋️‍♂️ **Workout Tracking**
-- **Exercise Types**: Strength, Cardio, Isometric
-- **Custom Exercises**: Add photos, videos, variations
-- **Integrated Timer**: Custom rest timer, set countdown, auto-start
-- **Real-time Tracking**: Live workout sessions with set logging
-- **Wearable Support**: Google Fit & Wear OS sync
+## 🎯 Current Features
 
-### 📊 **Progress & Analytics**
-- **Advanced Charts**: 1RM tracking, Volume Load, PR tracking
-- **Body Measurements**: Track waist, arms, chest, weight, body fat
-- **Progress Photos**: Before/after galleries with privacy controls
-- **Workout History**: Deep filtering by exercise, date, PR, tags
+### ✅ **Implemented & Available**
 
-### 📆 **Program & Routine Builder**
-- **Visual Workout Builder**: Drag & drop interface
-- **Progression Models**: Linear, double progression, % of 1RM
-- **Advanced Sets**: Supersets, circuits, drop sets
-- **Scheduling**: Calendar-based workout planning
-- **Program Templates**: Starting Strength, 5/3/1, PPL, and more
+#### 🏋️‍♂️ **Workout Tracking**
+- **Active Workout Sessions**: Real-time workout tracking with timer
+- **Set Logging**: Log weight, reps, and rest periods
+- **Rest Timer**: Custom rest periods with notifications
+- **Exercise Library**: Search and filter exercises
+- **Workout History**: View past workout sessions
 
-### 💾 **Data Management**
-- **Offline-First**: 100% usable without internet
-- **Multi-User Profiles**: One device, many users
-- **Backup & Restore**: Local and cloud backup options
-- **Import/Export**: CSV/ZIP support, OpenScale compatibility
+#### 📊 **Progress & Analytics**
+- **Progress Charts**: Volume load, strength progression, workout density
+- **Body Measurements**: Track weight, body fat, and custom measurements
+- **Personal Records**: Track 1RM and volume PRs
+- **Workout History**: Detailed workout tracking and filtering
 
-### 🤖 **Smart Features**
+#### 📋 **Program & Routine Builder**
+- **Program Templates**: Starting Strength, 5/3/1, StrongLifts, PPL, and more
+- **Custom Programs**: Create your own workout programs
+- **Progression Models**: Linear, percentage-based, double progression
+- **Program Tracking**: Track program completion and progress
+
+#### 👤 **Profile & Settings**
+- **Multi-User Profiles**: Multiple profiles on one device
+- **Theme Customization**: 11 color themes, dark/light mode
+- **Unit Preferences**: lbs/kg, miles/km conversion
+- **Settings Management**: Comprehensive app preferences
+
+#### 🔧 **Built-in Tools**
+- **Plate Calculator**: Calculate weight plates for any target weight
+- **Weight Converter**: Convert between pounds and kilograms
+
+#### 💾 **Data Management**
+- **Offline-First**: Works completely without internet
+- **Data Export**: CSV export for workout data
+- **Backup & Restore**: Local backup system
+- **OpenScale Import**: Import data from OpenScale app
+
+#### 📱 **Help & Documentation**
+- **In-App Help**: Quick start guide, feature overview, troubleshooting
+- **External Documentation**: Comprehensive user guide on GitHub Pages
+- **Feedback System**: Direct feedback integration
+
+### 🚧 **Planned Features**
+
+#### 🤖 **Smart Features** (Future)
 - **AI Recommendations**: Personalized workout suggestions
 - **Form Feedback**: AI-powered exercise guidance
 - **Recovery Tracking**: Fatigue and recovery monitoring
 - **Plateau Detection**: Smart progress analysis
 
-### 🎨 **Modern UI/UX**
-- **Material 3 Design**: Dynamic theming and colors
-- **Dark/Light Mode**: Automatic system theme detection
-- **Smooth Animations**: Fluid transitions and micro-interactions
-- **Accessibility**: Full accessibility support
+#### 📸 **Media & Photos** (Future)
+- **Progress Photos**: Before/after galleries with privacy controls
+- **Custom Exercise Media**: Add photos and videos to exercises
+- **Camera Integration**: In-app photo capture
+
+#### 🔗 **Health Integration** (Future)
+- **Health Connect**: Sync with Android Health Connect
+- **Google Fit**: Integration with Google Fit
+- **Wear OS**: Companion app for smartwatches
+
+#### 🎨 **Enhanced UI/UX** (Future)
+- **Advanced Animations**: Micro-interactions and transitions
+- **Custom Fonts**: Inter font family integration
+- **Accessibility**: Enhanced accessibility features
 
 ## 🧱 Technology Stack
 
@@ -128,28 +158,40 @@ app/src/main/java/com/chilluminati/rackedup/
 └── MainActivity.kt         # Main activity entry point
 ```
 
-## 🎯 Core Features Status
+## 🗺️ Development Roadmap
 
-### ✅ **Completed**
-- Complete MVVM architecture with Jetpack Compose
-- Room database with comprehensive entities
-- Material 3 design system with dynamic colors
-- Navigation system with bottom navigation
-- Active workout tracking with timer
-- Exercise library with search and filtering
-- Progress charts and analytics
-- Program builder with templates
-- Multi-user profile support
-- Data import/export functionality
-- Settings and preferences management
+### 🎯 **Phase 1: Core UX Improvements** (Current Priority)
+- [ ] **Workout History Filters**: Filter by date, exercise, and type
+- [ ] **Workout Editing**: Edit past workouts and sets
+- [ ] **UI Polish**: Micro-animations and accessibility improvements
+- [ ] **PR Detection**: Automatic personal record detection
+- [ ] **PR Celebrations**: Lightweight celebration notifications
+- [ ] **Rest Timer Notifications**: Enhanced timer notifications
 
-### 🚧 **In Development**
-- Workout history filters and editing
-- Custom exercises with media support
-- Progress photos with camera integration
-- Health Connect integration
-- AI-powered recommendations
-- Wear OS companion app
+### 🚀 **Phase 2: Enhanced Features** (Next)
+- [ ] **Custom Exercise Media**: Add photos and videos to exercises
+- [ ] **Exercise Variations**: Link alternates and substitutions
+- [ ] **Advanced Timers**: Interval training and auto-start features
+- [ ] **Exercise History**: Per-exercise past set history
+- [ ] **Progress Photos**: Camera integration and gallery
+
+### 🔗 **Phase 3: Health Integration** (Future)
+- [ ] **Health Connect**: Weight, steps, calories, heart rate sync
+- [ ] **Google Fit**: Integration with Google Fit ecosystem
+- [ ] **Recovery Tracking**: HRV and sleep integration
+- [ ] **Advanced Analytics**: PR trends and insights
+
+### 🤖 **Phase 4: AI & Smart Features** (Future)
+- [ ] **AI Recommendations**: Personalized workout suggestions
+- [ ] **Form Feedback**: AI-powered exercise guidance
+- [ ] **Plateau Detection**: Smart progress analysis
+- [ ] **Recovery Recommendations**: Load management guidance
+
+### 📱 **Phase 5: Platform Extensions** (Future)
+- [ ] **Wear OS Companion**: Quick logging and HR monitoring
+- [ ] **Social Features**: Sharing and community programs
+- [ ] **Cloud Backup**: Google Drive integration
+- [ ] **Advanced ML**: Pose estimation and form analysis
 
 ## 🤝 Contributing
 
@@ -180,31 +222,26 @@ We welcome contributions from the fitness and Android development communities!
 - Follow Material 3 design guidelines
 - Write unit tests for new features
 
-## 📋 Development Roadmap
+## 📊 Current Status
 
-### Phase 1: Core UX Improvements
-- [ ] Workout history filters
-- [ ] Workout editing capabilities
-- [ ] UI polish and animations
-- [ ] PR detection and celebrations
+### ✅ **Fully Implemented**
+- **Complete MVVM Architecture**: Jetpack Compose + Material 3
+- **Database System**: Room with comprehensive entities and DAOs
+- **Navigation**: Bottom navigation with 5 main screens
+- **Workout Tracking**: Active sessions, set logging, rest timers
+- **Progress Analytics**: Charts, body measurements, PR tracking
+- **Program Builder**: Templates, custom programs, progression models
+- **Multi-User Profiles**: Profile switching and data isolation
+- **Data Management**: Export, backup, OpenScale import
+- **Settings & Preferences**: Themes, units, notifications
+- **Built-in Tools**: Plate calculator, weight converter
+- **Help System**: In-app help + external documentation
 
-### Phase 2: Enhanced Features
-- [ ] Custom exercises with media
-- [ ] Exercise variations and substitutions
-- [ ] Advanced timer features
-- [ ] Progress photos
-
-### Phase 3: Integration & Testing
-- [ ] Google Drive integration
-- [ ] Comprehensive test suite
-- [ ] Health Connect integration
-- [ ] Performance optimization
-
-### Phase 4: AI & Advanced Features
-- [ ] AI workout recommendations
-- [ ] Form feedback system
-- [ ] Recovery tracking
-- [ ] Wear OS companion
+### 🚧 **In Active Development**
+- Workout history filtering and editing
+- Enhanced UI animations and polish
+- PR detection and celebration system
+- Custom exercise media support
 
 ## 🔐 Privacy & Security
 
@@ -226,11 +263,12 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 - **Fitness Community** for feedback and feature requests
 - **Open Source Contributors** for the amazing libraries we use
 
-## 📞 Support
+## 📞 Support & Documentation
 
-- **GitHub Issues**: For bug reports and feature requests
-- **Discussions**: For general questions and community chat
-- **Email**: For urgent issues and support
+- **📖 [Complete User Guide](https://tshives26.github.io/RackedUp/)**: Comprehensive documentation and tutorials
+- **🐛 [GitHub Issues](https://github.com/tshives26/RackedUp/issues)**: Bug reports and feature requests
+- **💬 [GitHub Discussions](https://github.com/tshives26/RackedUp/discussions)**: Community chat and questions
+- **📧 [Send Feedback](https://forms.gle/bHfMDc7qsnUn6F4j6)**: Direct feedback form
 
 ---
 
