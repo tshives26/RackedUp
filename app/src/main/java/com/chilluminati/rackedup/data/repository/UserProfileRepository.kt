@@ -111,20 +111,4 @@ class UserProfileRepository @Inject constructor(
         return diffInYears.toInt()
     }
     
-    /**
-     * Debug method to get all profiles and their status
-     */
-    suspend fun debugGetAllProfiles(): List<UserProfile> {
-        return userProfileDao.getAllProfiles()
-    }
-    
-    /**
-     * Debug method to clear all profiles (for testing only)
-     */
-    suspend fun debugClearAllProfiles() {
-        val allProfiles = userProfileDao.getAllProfiles()
-        allProfiles.forEach { profile ->
-            userProfileDao.deleteProfile(profile)
-        }
-    }
 }

@@ -8,7 +8,6 @@ import com.chilluminati.rackedup.data.database.dao.*
 import com.chilluminati.rackedup.di.IoDispatcher
 import com.chilluminati.rackedup.data.repository.UserProfileRepository
 import kotlinx.coroutines.CoroutineDispatcher
-import com.chilluminati.rackedup.data.repository.TestDataSeeder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -79,31 +78,4 @@ object DatabaseModule {
     fun provideUserProfileRepository(userProfileDao: UserProfileDao): UserProfileRepository =
         UserProfileRepository(userProfileDao)
         
-    @Provides
-    @Singleton
-    fun provideTestDataSeeder(
-        userProfileDao: UserProfileDao,
-        workoutDao: WorkoutDao,
-        workoutExerciseDao: WorkoutExerciseDao,
-        exerciseSetDao: ExerciseSetDao,
-        exerciseDao: ExerciseDao,
-        programDao: ProgramDao,
-        programDayDao: ProgramDayDao,
-        programExerciseDao: ProgramExerciseDao,
-        personalRecordDao: PersonalRecordDao,
-        bodyMeasurementDao: BodyMeasurementDao,
-        @IoDispatcher ioDispatcher: CoroutineDispatcher
-    ): TestDataSeeder = TestDataSeeder(
-        userProfileDao,
-        workoutDao,
-        workoutExerciseDao,
-        exerciseSetDao,
-        exerciseDao,
-        programDao,
-        programDayDao,
-        programExerciseDao,
-        personalRecordDao,
-        bodyMeasurementDao,
-        ioDispatcher
-    )
 }

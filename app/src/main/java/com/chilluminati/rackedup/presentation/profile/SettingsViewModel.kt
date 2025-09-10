@@ -3,7 +3,6 @@ package com.chilluminati.rackedup.presentation.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chilluminati.rackedup.data.repository.SettingsRepository
-import com.chilluminati.rackedup.data.repository.TestDataSeeder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import android.app.NotificationManager
@@ -27,7 +26,6 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val testDataSeeder: TestDataSeeder,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
     
@@ -254,53 +252,4 @@ class SettingsViewModel @Inject constructor(
         }
     }
     
-    /**
-     * Generate test data for development/testing purposes
-     */
-    fun generateTestData() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            try {
-                val result = testDataSeeder.generateTestData()
-                result.fold(
-                    onSuccess = { message ->
-                        // Success - could show a toast or update UI
-                        android.util.Log.i("SettingsViewModel", "Test data generated: $message")
-                    },
-                    onFailure = { error ->
-                        // Error - could show error message
-                        android.util.Log.e("SettingsViewModel", "Failed to generate test data", error)
-                    }
-                )
-            } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            }
-        }
-    }
-    
-    /**
-     * Clear all test data from the database
-     */
-    fun clearTestData() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            try {
-                val result = testDataSeeder.clearTestData()
-                result.fold(
-                    onSuccess = { message ->
-                        // Success - could show a toast or update UI
-                        android.util.Log.i("SettingsViewModel", "Test data cleared: $message")
-                    },
-                    onFailure = { error ->
-                        // Error - could show error message
-                        android.util.Log.e("SettingsViewModel", "Failed to clear test data", error)
-                    }
-                )
-            } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            }
-        }
-    }
 }

@@ -501,7 +501,7 @@ class ProgressViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 // Handle error - in a real app you'd show a snackbar
-                println("Error deleting workout: ${e.message}")
+                // Error handling can be improved with proper UI feedback
             }
         }
     }
@@ -517,7 +517,7 @@ class ProgressViewModel @Inject constructor(
                 // Explicitly refresh PR data to ensure it's up to date
                 refreshPersonalRecords()
             } catch (e: Exception) {
-                println("Error refreshing stats: ${e.message}")
+                // Error handling can be improved with proper UI feedback
             }
         }
     }
@@ -536,7 +536,7 @@ class ProgressViewModel @Inject constructor(
                 val volumeRecords = progressRepository.getVolumeBasedPersonalRecords()
                 _volumeBasedPersonalRecords.value = volumeRecords
             } catch (e: Exception) {
-                println("Error refreshing personal records: ${e.message}")
+                // Error handling can be improved with proper UI feedback
             }
         }
     }
@@ -581,7 +581,7 @@ class ProgressViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 // Log error but don't crash the app
-                println("Error fixing workout totals: ${e.message}")
+                // Error handling can be improved with proper UI feedback
             }
         }
     }

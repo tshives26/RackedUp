@@ -66,7 +66,6 @@ class ProgramsViewModel @Inject constructor(
     private fun loadPrograms() {
         viewModelScope.launch(ioDispatcher) {
             try {
-                Log.d("ProgramsViewModel", "loadPrograms: started")
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
                 // Load all programs
@@ -286,19 +285,12 @@ class ProgramsViewModel @Inject constructor(
      * Start creating a new custom program
      */
     fun startNewProgram() {
-        Log.d("ProgramsViewModel", "startNewProgram: Called - this will reset builder state!")
         
         // CRITICAL FIX: Don't reset if we're currently editing a program
         if (Companion.currentEditingProgramId != null) {
-            Log.d("ProgramsViewModel", "startNewProgram: BLOCKED - currently editing programId=${Companion.currentEditingProgramId}")
             return
         }
         
-        val stackTrace = Thread.currentThread().stackTrace
-        Log.d("ProgramsViewModel", "startNewProgram: Stack trace:")
-        stackTrace.take(10).forEach { element ->
-            Log.d("ProgramsViewModel", "  at ${element.className}.${element.methodName}(${element.fileName}:${element.lineNumber})")
-        }
         
         val initialDay = ProgramDay(
             id = nextTempDayId--,
@@ -317,7 +309,6 @@ class ProgramsViewModel @Inject constructor(
             durationEnabled = false,
             programDays = listOf(initialDay)
         )
-        Log.d("ProgramsViewModel", "startNewProgram: Builder state reset to new program")
     }
     
     /**
@@ -382,10 +373,8 @@ class ProgramsViewModel @Inject constructor(
       * when the user revisits the schedule step.
       */
      fun setProgramDays(dayNames: List<String>) {
-         Log.d("ProgramsViewModel", "setProgramDays: names=${dayNames.joinToString()} size=${dayNames.size}")
          val currentState = _builderState.value
          val currentDays = currentState.programDays.toMutableList()
-         Log.d("ProgramsViewModel", "setProgramDays: currentDays=${currentDays.map { it.name }.joinToString()}")
          val updatedDays = mutableListOf<ProgramDay>()
          val updatedExercises = currentState.programExercises.toMutableMap()
 
@@ -425,8 +414,6 @@ class ProgramsViewModel @Inject constructor(
              programDays = updatedDays,
              programExercises = updatedExercises
          )
-         Log.d("ProgramsViewModel", "setProgramDays: applied days=${updatedDays.size}")
-         Log.d("ProgramsViewModel", "setProgramDays: final days=${updatedDays.map { it.name }.joinToString()}")
      }
     
     /**

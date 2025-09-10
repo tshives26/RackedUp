@@ -240,8 +240,6 @@ fun SettingsScreen(
             // Testing Section
             item {
                 SettingsSection(title = "Testing") {
-                    var showTestDataDialog by remember { mutableStateOf(false) }
-                    var showClearDataDialog by remember { mutableStateOf(false) }
                     
                     if (uiState.isLoading) {
                         Row(
@@ -261,40 +259,6 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    } else {
-                        SettingsClickableItem(
-                            title = "Generate Test Data",
-                            description = "Create sample workouts and data for testing progress graphs",
-                            icon = Icons.Default.DataUsage,
-                            onClick = { showTestDataDialog = true }
-                        )
-                        
-                        SettingsClickableItem(
-                            title = "Clear Test Data",
-                            description = "Remove all test data from the database",
-                            icon = Icons.Default.Delete,
-                            onClick = { showClearDataDialog = true }
-                        )
-                    }
-                    
-                    if (showTestDataDialog) {
-                        TestDataDialog(
-                            onConfirm = {
-                                viewModel.generateTestData()
-                                showTestDataDialog = false
-                            },
-                            onDismiss = { showTestDataDialog = false }
-                        )
-                    }
-                    
-                    if (showClearDataDialog) {
-                        ClearTestDataDialog(
-                            onConfirm = {
-                                viewModel.clearTestData()
-                                showClearDataDialog = false
-                            },
-                            onDismiss = { showClearDataDialog = false }
-                        )
                     }
                 }
             }
@@ -961,76 +925,3 @@ fun formatDuration(totalSeconds: Int): String {
     }
 }
 
-@Composable
-private fun TestDataDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Generate Test Data",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = "This will create a test user profile with 6 weeks of realistic workout data using existing workout templates. The data will include workouts, exercises, sets, and body measurements perfect for testing progress graphs and analytics.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Generate")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ClearTestDataDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Clear Test Data",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = "This will remove all test data including the test user profile, workouts, and measurements. This action cannot be undone.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Clear All")
-            }
-            },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
