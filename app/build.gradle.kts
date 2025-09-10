@@ -12,6 +12,29 @@ android {
     namespace = "com.chilluminati.rackedup"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            // Use environment variables for security
+            val keystorePath = project.findProperty("RELEASE_STORE_FILE") as String?
+            val keystorePassword = project.findProperty("RELEASE_STORE_PASSWORD") as String?
+            val keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as String?
+            val keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String?
+            
+            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            } else {
+                // Fallback to debug keystore for development
+                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                this.keyAlias = "androiddebugkey"
+                this.keyPassword = "android"
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.chilluminati.rackedup"
         minSdk = 26
@@ -36,11 +59,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug") // Use debug signing for now
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     

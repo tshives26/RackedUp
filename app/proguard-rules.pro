@@ -51,3 +51,19 @@
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn retrofit2.**
+
+# --- Remove logging in release builds ---
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int i(...);
+    public static int w(...);
+    public static int d(...);
+    public static int e(...);
+}
+
+# Remove System.out.println calls
+-assumenosideeffects class java.lang.System {
+    public static void out.println(...);
+    public static void err.println(...);
+}
