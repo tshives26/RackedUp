@@ -30,7 +30,7 @@ description: Complete user guide and documentation for RackedUp - the ultimate g
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started {#getting-started}
 
 ### Welcome to RackedUp
 
@@ -65,7 +65,43 @@ RackedUp is a modern, offline-first fitness tracking app designed for serious at
 
 ---
 
-## 🧭 Navigation Guide
+## ⭐ Core Features {#core-features}
+
+RackedUp offers a comprehensive suite of features designed to enhance your fitness journey:
+
+### 🏋️ Advanced Workout Tracking
+- **Set & Rep Logging**: Track weight, reps, and rest periods with precision
+- **Exercise Library**: Extensive database of exercises with instructions
+- **Rest Timer**: Built-in timer with customizable durations and notifications
+- **Workout History**: Complete history of all your training sessions
+
+### 📊 Progress Analytics
+- **Visual Charts**: Track your strength progression over time
+- **Personal Records**: Automatic PR detection and celebration
+- **Volume Tracking**: Monitor total weight lifted and training volume
+- **Body Measurements**: Track weight, body fat, and custom measurements
+
+### 📋 Program Management
+- **Built-in Programs**: Popular programs like 5/3/1, Starting Strength, PPL
+- **Custom Programs**: Create your own workout routines
+- **Progression Models**: Linear, percentage-based, and RPE progression
+- **Program Scheduling**: Plan and track your training schedule
+
+### 🔧 Built-in Tools
+- **Plate Calculator**: Determine exact plate combinations for any weight
+- **Weight Converter**: Quick conversion between lbs and kg
+- **Progress Photos**: Track visual progress with before/after photos
+- **Data Export**: Export your data in CSV format
+
+### 🔒 Privacy & Security
+- **Offline-First**: Works completely without internet connection
+- **Local Storage**: All data stored securely on your device
+- **No Tracking**: No user behavior tracking or data collection
+- **Data Ownership**: You own and control all your data
+
+---
+
+## 🧭 Navigation Guide {#navigation-guide}
 
 RackedUp uses a bottom navigation bar with five main sections:
 
@@ -108,7 +144,7 @@ Your personal settings and tools:
 
 ---
 
-## 🏋️ Workout Tracking
+## 🏋️ Workout Tracking {#workout-tracking}
 
 ### Starting a Workout
 
@@ -181,7 +217,7 @@ Your personal settings and tools:
 
 ---
 
-## 📊 Progress & Analytics
+## 📊 Progress & Analytics {#progress--analytics}
 
 ### Overview Tab
 
@@ -257,7 +293,7 @@ Detailed view of your workout history:
 
 ---
 
-## 📋 Programs & Routines
+## 📋 Programs & Routines {#programs--routines}
 
 ### Built-in Program Templates
 
@@ -333,7 +369,7 @@ For each exercise in your program:
 
 ---
 
-## 👤 Profile & Settings
+## 👤 Profile & Settings {#profile--settings}
 
 ### Profile Management
 
@@ -407,7 +443,7 @@ For each exercise in your program:
 
 ---
 
-## 🔧 Tools & Utilities
+## 🔧 Tools & Utilities {#tools--utilities}
 
 ### Plate Calculator
 
@@ -453,7 +489,7 @@ Quick conversion between pounds and kilograms.
 
 ---
 
-## 💾 Data Management
+## 💾 Data Management {#data-management}
 
 ### Backup Strategies
 
@@ -505,7 +541,7 @@ Quick conversion between pounds and kilograms.
 
 ---
 
-## 🔧 Troubleshooting
+## 🔧 Troubleshooting {#troubleshooting}
 
 ### Common Issues
 
@@ -586,7 +622,7 @@ Quick conversion between pounds and kilograms.
 
 ---
 
-## 🔒 Privacy & Security
+## 🔒 Privacy & Security {#privacy--security}
 
 ### Data Protection Principles
 
@@ -630,7 +666,7 @@ Quick conversion between pounds and kilograms.
 
 ---
 
-## 💡 Tips & Best Practices
+## 💡 Tips & Best Practices {#tips--best-practices}
 
 ### Getting the Most Out of RackedUp
 
@@ -680,7 +716,7 @@ Quick conversion between pounds and kilograms.
 
 ---
 
-## ❓ FAQ
+## ❓ FAQ {#faq}
 
 ### General Usage
 
@@ -740,7 +776,7 @@ A: Yes, RackedUp supports both portrait and landscape orientations.
 
 ---
 
-## 📞 Contact & Support
+## 📞 Contact & Support {#contact--support}
 
 ### Getting Help
 

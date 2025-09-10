@@ -5,11 +5,17 @@ title: "RackedUp Help & Documentation"
 description: "Complete user guide and documentation for RackedUp - the ultimate gym companion for serious athletes"
 url: "https://tshives26.github.io"
 baseurl: "/RackedUp"
+version: "1.0.0"
 
 # Build settings
 markdown: kramdown
 highlighter: rouge
 theme: minima
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
 
 # Plugins
 plugins:
@@ -29,6 +35,16 @@ navigation:
     url: "#getting-started"
   - title: "Features"
     url: "#core-features"
+  - title: "Workout Tracking"
+    url: "#workout-tracking"
+  - title: "Progress & Analytics"
+    url: "#progress--analytics"
+  - title: "Programs & Routines"
+    url: "#programs--routines"
+  - title: "Profile & Settings"
+    url: "#profile--settings"
+  - title: "Tools & Utilities"
+    url: "#tools--utilities"
   - title: "Troubleshooting"
     url: "#troubleshooting"
   - title: "FAQ"
